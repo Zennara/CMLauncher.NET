@@ -260,10 +260,9 @@ namespace CMLauncher
             Grid.SetColumn(infoPanel, 1);
             grid.Children.Add(infoPanel);
 
-            // Actions (hidden by default; revealed on hover via triggers on parent border)
+            // Actions
             var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
 
-            // Play button (red)
             var playBtn = new Button
             {
                 Content = "Play",
@@ -276,16 +275,17 @@ namespace CMLauncher
             playBtn.Click += (s, e) => MessageBox.Show($"Launching {info.Name}...");
             actions.Children.Add(playBtn);
 
-            // Open Folder button (icon-ish text) ?
+            // Folder icon (Segoe MDL2 Assets: E8B7)
             var folderBtn = new Button
             {
-                Content = "?",
                 Padding = new Thickness(10, 6, 10, 6),
                 Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
-                Margin = new Thickness(0, 0, 8, 0)
+                Margin = new Thickness(0, 0, 8, 0),
+                ToolTip = "Open folder"
             };
+            folderBtn.Content = new TextBlock { Text = "\uE8B7", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
             folderBtn.Click += (s, e) =>
             {
                 try
@@ -298,8 +298,16 @@ namespace CMLauncher
             };
             actions.Children.Add(folderBtn);
 
-            // Overflow menu (three dots)
-            var menuToggle = new ToggleButton { Content = "?", Padding = new Thickness(10, 6, 10, 6), Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)), Foreground = Brushes.White, BorderThickness = new Thickness(0) };
+            // More (three dots) icon (Segoe MDL2 Assets: E712)
+            var menuToggle = new ToggleButton
+            {
+                Padding = new Thickness(10, 6, 10, 6),
+                Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+                Foreground = Brushes.White,
+                BorderThickness = new Thickness(0),
+                ToolTip = "More"
+            };
+            menuToggle.Content = new TextBlock { Text = "\uE712", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
             var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
             var menuStack = new StackPanel();
             menuStack.Children.Add(CreateMenuItem("Edit", () => { /* TODO edit */ }));
@@ -314,7 +322,6 @@ namespace CMLauncher
             Grid.SetColumn(actions, 2);
             grid.Children.Add(actions);
 
-            // Hover behavior: show actions when hovering the card
             border.MouseEnter += (s, e) => actions.Visibility = Visibility.Visible;
             border.MouseLeave += (s, e) => { if (menuPopup.IsOpen == false) actions.Visibility = Visibility.Collapsed; };
 
