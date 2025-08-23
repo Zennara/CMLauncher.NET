@@ -53,8 +53,6 @@ namespace CMLauncher
                         MainContentFrame.Navigate(new InstallationsPage());
                         break;
                     case "Skins":
-                        // Would navigate to skins page
-                        break;
                     case "PatchNotes":
                         // Would navigate to patch notes page
                         break;
