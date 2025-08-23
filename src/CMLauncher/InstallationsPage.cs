@@ -299,31 +299,56 @@ namespace CMLauncher
             actions.Children.Add(folderBtn);
 
             // More menu
-            var menuToggle = new ToggleButton
+            bool isDefaultSteam = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam", System.StringComparison.OrdinalIgnoreCase);
+            if (!isDefaultSteam)
             {
-                Padding = new Thickness(10, 6, 10, 6),
-                Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
-                Foreground = Brushes.White,
-                BorderThickness = new Thickness(0),
-                ToolTip = "More"
-            };
-            menuToggle.Content = new TextBlock { Text = "\uE712", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
-            var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
-            var menuStack = new StackPanel();
-            menuStack.Children.Add(CreateMenuItem("Edit", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; ShowEditDialog(info); }));
-            menuStack.Children.Add(CreateMenuItem("Duplicate", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; var dup = InstallationService.DuplicateInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
-            menuStack.Children.Add(CreateMenuItem("Delete", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; InstallationService.DeleteInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
-            menuPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)), BorderThickness = new Thickness(1), Child = menuStack };
-            menuToggle.Checked += (s, e) => menuPopup.IsOpen = true;
-            menuToggle.Unchecked += (s, e) => menuPopup.IsOpen = false;
-            menuPopup.Closed += (s, e) => menuToggle.IsChecked = false;
-            actions.Children.Add(menuToggle);
+                var menuToggle = new ToggleButton
+                {
+                    Padding = new Thickness(10, 6, 10, 6),
+                    Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+                    Foreground = Brushes.White,
+                    BorderThickness = new Thickness(0),
+                    ToolTip = "More"
+                };
+                menuToggle.Content = new TextBlock { Text = "\uE712", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
+                var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
+                var menuStack = new StackPanel();
+                menuStack.Children.Add(CreateMenuItem("Edit", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; ShowEditDialog(info); }));
+                menuStack.Children.Add(CreateMenuItem("Duplicate", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; var dup = InstallationService.DuplicateInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
+                menuStack.Children.Add(CreateMenuItem("Delete", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; InstallationService.DeleteInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
+                menuPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)), BorderThickness = new Thickness(1), Child = menuStack };
+                menuToggle.Checked += (s, e) => menuPopup.IsOpen = true;
+                menuToggle.Unchecked += (s, e) => menuPopup.IsOpen = false;
+                menuPopup.Closed += (s, e) => menuToggle.IsChecked = false;
+                actions.Children.Add(menuToggle);
+            }
+            else
+            {
+                // Optional: only allow Duplicate for Steam default via a smaller overflow
+                var menuToggle = new ToggleButton
+                {
+                    Padding = new Thickness(10, 6, 10, 6),
+                    Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+                    Foreground = Brushes.White,
+                    BorderThickness = new Thickness(0),
+                    ToolTip = "More"
+                };
+                menuToggle.Content = new TextBlock { Text = "\uE712", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
+                var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
+                var menuStack = new StackPanel();
+                menuStack.Children.Add(CreateMenuItem("Duplicate", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; /* duplicate default not meaningful; omit or implement as needed */ }));
+                menuPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)), BorderThickness = new Thickness(1), Child = menuStack };
+                menuToggle.Checked += (s, e) => menuPopup.IsOpen = true;
+                menuToggle.Unchecked += (s, e) => menuPopup.IsOpen = false;
+                menuPopup.Closed += (s, e) => menuToggle.IsChecked = false;
+                actions.Children.Add(menuToggle);
+            }
 
             Grid.SetColumn(actions, 2);
             grid.Children.Add(actions);
 
             border.MouseEnter += (s, e) => actions.Visibility = Visibility.Visible;
-            border.MouseLeave += (s, e) => { if (menuPopup.IsOpen == false) actions.Visibility = Visibility.Collapsed; };
+            border.MouseLeave += (s, e) => { /* keep visible if any popup open */ actions.Visibility = Visibility.Collapsed; };
 
             border.Child = grid;
             panel.Children.Add(border);
@@ -331,6 +356,10 @@ namespace CMLauncher
 
         private void ShowEditDialog(InstallationInfo info)
         {
+            // Guard: do not allow editing the default Steam installation
+            if (string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam", System.StringComparison.OrdinalIgnoreCase))
+                return;
+
             var dlg = new Window
             {
                 Title = "Edit installation",
@@ -371,19 +400,26 @@ namespace CMLauncher
             Grid.SetColumn(caretToggle, 1);
             iconArea.Children.Add(caretToggle);
 
-            var iconPopup = new Popup { PlacementTarget = caretToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
-            var icons = InstallationService.LoadAvailableIcons();
-            var wrap = new WrapPanel { Margin = new Thickness(8) };
-            foreach (var ic in icons)
+            var iconPopup = new Popup
+            {
+                PlacementTarget = caretToggle,
+                Placement = PlacementMode.Bottom,
+                StaysOpen = false,
+                AllowsTransparency = true
+            };
+            var iconScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 260, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)) };
+            var iconWrap = new WrapPanel { Margin = new Thickness(8) };
+            foreach (var ic in InstallationService.LoadAvailableIcons())
             {
                 var im = new Image { Width = 40, Height = 40, Stretch = Stretch.Uniform, Margin = new Thickness(4) };
                 SetIconImage(im, ic);
                 var b = new Button { Content = im, Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = Brushes.Transparent };
-                var chosen = ic; // capture
+                var chosen = ic;
                 b.Click += (_, __) => { selectedIcon = chosen; SetIconImage(currentIcon, selectedIcon); iconPopup.IsOpen = false; caretToggle.IsChecked = false; };
-                wrap.Children.Add(b);
+                iconWrap.Children.Add(b);
             }
-            iconPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), BorderThickness = new Thickness(1), Child = new ScrollViewer { Content = wrap, MaxHeight = 260 } };
+            iconScroll.Content = iconWrap;
+            iconPopup.Child = new Border { Width = 420, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), Child = iconScroll };
             caretToggle.Checked += (s, e) => iconPopup.IsOpen = true;
             caretToggle.Unchecked += (s, e) => iconPopup.IsOpen = false;
             iconPopup.Closed += (s, e) => caretToggle.IsChecked = false;
