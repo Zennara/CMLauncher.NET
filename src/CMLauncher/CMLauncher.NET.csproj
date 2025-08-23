@@ -8,4 +8,10 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Include images as WPF resources -->
+    <Resource Include="assets\logos\cmz.png" Condition="Exists('assets\\logos\\cmz.png')" />
+    <Resource Include="assets\logos\cmw.png" Condition="Exists('assets\\logos\\cmw.png')" />
+  </ItemGroup>
+
 </Project>
