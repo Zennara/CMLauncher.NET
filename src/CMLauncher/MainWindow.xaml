@@ -400,8 +400,8 @@
                                 <TextBlock Text="⚒" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
-                                <TextBlock x:Name="SelectedInstallName" Text="forge" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
-                                <TextBlock x:Name="SelectedInstallVersion" Text="1.21.5-forge-55.0.23" Foreground="#CCCCCC" FontSize="11"/>
+                                <TextBlock x:Name="SelectedInstallName" Text="Uknown" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
+                                <TextBlock x:Name="SelectedInstallVersion" Text="Unknown" Foreground="#CCCCCC" FontSize="11"/>
                             </StackPanel>
                             <TextBlock Grid.Column="2" Text="▾" Foreground="#AAAAAA" VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </Grid>

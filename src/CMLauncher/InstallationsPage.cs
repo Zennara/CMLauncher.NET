@@ -6,76 +6,46 @@ namespace CMLauncher
 {
     public class InstallationsPage : Page
     {
-        private Brush GetAccentBrush()
-        {
-            // Try to get AccentBrush from MainWindow resources, then App resources, else fallback to red
-            var fallback = new SolidColorBrush(Color.FromRgb(183, 28, 28)); // #B71C1C
-            try
-            {
-                if (Application.Current?.MainWindow != null && Application.Current.MainWindow.Resources.Contains("AccentBrush"))
-                    return (Brush)Application.Current.MainWindow.Resources["AccentBrush"];
-                if (Application.Current?.Resources != null && Application.Current.Resources.Contains("AccentBrush"))
-                    return (Brush)Application.Current.Resources["AccentBrush"];
-            }
-            catch { }
-            return fallback;
-        }
+        private StackPanel _listHost = null!;
+        private readonly string _gameKey;
 
-        public InstallationsPage()
+        public InstallationsPage(string gameKey)
         {
-            var grid = new Grid
-            {
-                Background = new SolidColorBrush(Color.FromRgb(32, 32, 32))
-            };
+            _gameKey = gameKey;
+            Background = new SolidColorBrush(Color.FromRgb(32, 32, 32));
 
-            var panel = new StackPanel
-            {
-                Margin = new Thickness(20) // Fixed - using single parameter constructor
-            };
-            
-            // Title
-            panel.Children.Add(new TextBlock
+            var root = new StackPanel { Margin = new Thickness(20) };
+
+            // Header
+            root.Children.Add(new TextBlock
             {
                 Text = "Installations",
                 FontSize = 24,
                 FontWeight = FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 20), // Fixed - using all four parameters
-                Foreground = Brushes.White
-            });
-            
-            // Description
-            panel.Children.Add(new TextBlock
-            {
-                Text = "Create and manage your installations of CMZ and CMW",
-                FontSize = 14,
-                Margin = new Thickness(0, 0, 0, 20), // Fixed - using all four parameters
-                Foreground = Brushes.LightGray
-            });
-            
-            // Create button
-            var createButton = new Button
-            {
-                Content = "New Installation",
-                Padding = new Thickness(15, 8, 15, 8), // Fixed - using all four parameters
-                Background = GetAccentBrush(),
                 Foreground = Brushes.White,
-                BorderThickness = new Thickness(0),
-                HorizontalAlignment = HorizontalAlignment.Left,
-                Margin = new Thickness(0, 0, 0, 20) // Fixed - using all four parameters
-            };
-            panel.Children.Add(createButton);
-            
-            // Installations list
-            var installationsPanel = new StackPanel();
-            
-            AddInstallationItem(installationsPanel, "CMZ Default", "1.21.5-forge-55.0.23", true);
-            AddInstallationItem(installationsPanel, "CMW Default", "1.20.1-forge-52.1.16", false);
-            AddInstallationItem(installationsPanel, "CMZ Testing", "1.21.5-forge-55.0.24-beta", false);
-            
-            panel.Children.Add(installationsPanel);
-            
-            grid.Children.Add(panel);
-            Content = grid;
+                Margin = new Thickness(0, 0, 0, 20)
+            });
+
+            _listHost = new StackPanel();
+            root.Children.Add(_listHost);
+
+            Content = root;
+
+            RefreshList();
+        }
+
+        private void RefreshList()
+        {
+            _listHost.Children.Clear();
+
+            // Always include default Steam option first
+            AddInstallationItem(_listHost, "Steam", "Latest Version", true);
+
+            var installs = InstallationService.LoadInstallations(_gameKey);
+            foreach (var inst in installs)
+            {
+                AddInstallationItem(_listHost, inst.Name, inst.Version, false);
+            }
         }
         
         private void AddInstallationItem(StackPanel panel, string name, string version, bool isSelected)
@@ -85,8 +55,8 @@ namespace CMLauncher
                 Background = isSelected ? 
                     new SolidColorBrush(Color.FromRgb(60, 60, 60)) : 
                     new SolidColorBrush(Color.FromRgb(45, 45, 45)),
-                Margin = new Thickness(0, 0, 0, 10), // Fixed - using all four parameters
-                Padding = new Thickness(15), // Fixed - using single parameter constructor
+                Margin = new Thickness(0, 0, 0, 10),
+                Padding = new Thickness(15),
                 CornerRadius = new CornerRadius(3)
             };
             
@@ -108,7 +78,7 @@ namespace CMLauncher
                 Text = $"Version: {version}",
                 FontSize = 12,
                 Foreground = Brushes.LightGray,
-                Margin = new Thickness(0, 5, 0, 0) // Fixed - using all four parameters
+                Margin = new Thickness(0, 5, 0, 0)
             });
             
             Grid.SetColumn(infoPanel, 0);
@@ -123,17 +93,17 @@ namespace CMLauncher
             var playButton = new Button
             {
                 Content = "Play",
-                Padding = new Thickness(15, 5, 15, 5), // Fixed - using all four parameters
-                Background = GetAccentBrush(),
+                Padding = new Thickness(15, 5, 15, 5),
+                Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"),
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
-                Margin = new Thickness(0, 0, 10, 0) // Fixed - using all four parameters
+                Margin = new Thickness(0, 0, 10, 0)
             };
             
             var editButton = new Button
             {
                 Content = "...",
-                Padding = new Thickness(10, 5, 10, 5), // Fixed - using all four parameters
+                Padding = new Thickness(10, 5, 10, 5),
                 Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0)

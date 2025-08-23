@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -24,10 +25,14 @@ namespace CMLauncher
         public MainWindow()
         {
             InitializeComponent();
+
+            // Ensure required directories exist
+            InstallationService.EnsureDirectoryStructure();
             
             InstanceComboBox = FindName("InstanceComboBox") as ComboBox;
             
             NavigateToContent("CMZ");
+            LoadInstallationsIntoPopup("CMZ");
             
             Loaded += (s, e) => 
             {
@@ -41,6 +46,75 @@ namespace CMLauncher
                     Debug.WriteLine($"ERROR during initial button selection: {ex.Message}");
                 }
             };
+        }
+
+        private void LoadInstallationsIntoPopup(string gameKey)
+        {
+            InstallItemsPanel.Children.Clear();
+
+            // Always include default Steam option first
+            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam", "Latest Version"));
+
+            var installs = InstallationService.LoadInstallations(gameKey);
+            foreach (var inst in installs)
+            {
+                InstallItemsPanel.Children.Add(CreateInstallMenuButton(inst.Name, inst.Version));
+            }
+
+            // Select the first item by default (Steam)
+            var firstButton = InstallItemsPanel.Children.OfType<Button>().FirstOrDefault();
+            if (firstButton != null)
+            {
+                if (_selectedInstallButton != null)
+                {
+                    SelectionProperties.SetIsSelected(_selectedInstallButton, false);
+                }
+                _selectedInstallButton = firstButton;
+                SelectionProperties.SetIsSelected(_selectedInstallButton, true);
+
+                if (firstButton.Tag is string tag)
+                {
+                    var parts = tag.Split('|');
+                    if (parts.Length == 2)
+                    {
+                        SelectedInstallName.Text = parts[0];
+                        SelectedInstallVersion.Text = parts[1];
+                    }
+                }
+            }
+        }
+
+        private Button CreateInstallMenuButton(string name, string version)
+        {
+            var button = new Button
+            {
+                Style = (Style)FindResource("InstallMenuItemStyle"),
+                Tag = $"{name}|{version}",
+                HorizontalContentAlignment = HorizontalAlignment.Stretch
+            };
+
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var colorBlock = new Border
+            {
+                Width = 28,
+                Height = 20,
+                CornerRadius = new CornerRadius(3),
+                Background = (Brush)FindResource("AccentBrush")
+            };
+            grid.Children.Add(colorBlock);
+
+            var textStack = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
+            Grid.SetColumn(textStack, 1);
+            textStack.Children.Add(new TextBlock { Text = name, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White });
+            textStack.Children.Add(new TextBlock { Text = version, Foreground = new SolidColorBrush(Color.FromRgb(207, 207, 207)), FontSize = 12 });
+            grid.Children.Add(textStack);
+
+            button.Content = grid;
+            button.Click += SelectInstallation_Click;
+            return button;
         }
 
         private Brush GetAccentBrush()
@@ -57,17 +131,17 @@ namespace CMLauncher
                 {
                     if (child is Button b) b.BorderThickness = new Thickness(0);
                 }
-                
+
                 button.BorderThickness = new Thickness(0, 0, 0, 2);
                 button.BorderBrush = GetAccentBrush();
-                
+
                 switch (tag)
                 {
                     case "Play":
                         NavigateToContent(currentSidebarSelection);
                         break;
                     case "Installations":
-                        MainContentFrame.Navigate(new InstallationsPage());
+                        MainContentFrame.Navigate(new InstallationsPage(currentSidebarSelection));
                         break;
                     case "PatchNotes":
                         break;
@@ -88,6 +162,7 @@ namespace CMLauncher
                 {
                     currentSidebarSelection = tag;
                     EditionTitleText.Text = tag == "CMZ" ? "CASTLEMINER Z" : "CM WARFARE";
+                    LoadInstallationsIntoPopup(tag);
                 }
                 
                 NavigateToContent(tag);
