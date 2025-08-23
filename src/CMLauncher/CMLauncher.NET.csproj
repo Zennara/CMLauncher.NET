@@ -9,11 +9,25 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Include images as WPF resources -->
+    <!-- logos as resources -->
     <Resource Include="assets\logos\cmz.png" Condition="Exists('assets\\logos\\cmz.png')" />
     <Resource Include="assets\logos\cmw.png" Condition="Exists('assets\\logos\\cmw.png')" />
+    <!-- backdrops as resources (if present) -->
     <Resource Include="assets\backdrops\cmz-backdrop.png" Condition="Exists('assets\\backdrops\\cmz-backdrop.png')" />
     <Resource Include="assets\backdrops\cmw-backdrop.png" Condition="Exists('assets\\backdrops\\cmw-backdrop.png')" />
+    <!-- wordarts as resources (if present) -->
+    <Resource Include="assets\wordarts\castleminerz.png" Condition="Exists('assets\\wordarts\\castleminerz.png')" />
+    <Resource Include="assets\wordarts\castleminerwarfare.png" Condition="Exists('assets\\wordarts\\castleminerwarfare.png')" />
+  </ItemGroup>
+
+  <!-- Also copy all files from these folders to output so site-of-origin and disk fallbacks work -->
+  <ItemGroup>
+    <Content Include="assets\backdrops\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="assets\wordarts\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

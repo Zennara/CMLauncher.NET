@@ -372,9 +372,10 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Content host with backdrop -->
+            <!-- Content host with backdrop and wordart overlay -->
             <Grid Grid.Row="0">
                 <Image x:Name="BackdropImage" Stretch="UniformToFill" Opacity="0.9"/>
+                <Image x:Name="WordartImage" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Opacity="0.95" MaxWidth="520" Margin="0,-40,0,0"/>
                 <Frame x:Name="MainContentFrame" NavigationUIVisibility="Hidden" Background="Transparent"/>
             </Grid>
 

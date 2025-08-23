@@ -125,10 +125,40 @@ namespace CMLauncher
 
         private void SetBackdropFor(string tag)
         {
-            // Try multiple sources: Resource (pack application), SiteOfOrigin (content/copied), and file path under app base
+            // Backdrop stays the same
             var fileName = tag == "CMW" ? "cmw-backdrop.png" : "cmz-backdrop.png";
             var relPath = $"assets/backdrops/{fileName}";
+            LoadImageWithFallback(BackdropImage, relPath, 0.9);
 
+            // Wordart: try multiple candidate filenames
+            string[] candidates = tag == "CMW"
+                ? new[]
+                {
+                    "assets/wordarts/castleminerwarfare.png",
+                    "assets/wordarts/castleminerwarfare.jpg",
+                    "assets/wordarts/castleminerwarfare"
+                }
+                : new[]
+                {
+                    "assets/wordarts/castleminerz.png",
+                    "assets/wordarts/castleminerz.jpg",
+                    "assets/wordarts/castleminerz"
+                };
+            LoadFirstAvailable(WordartImage, candidates, 0.95);
+        }
+
+        private void LoadFirstAvailable(System.Windows.Controls.Image target, string[] relCandidates, double opacity)
+        {
+            foreach (var rel in relCandidates)
+            {
+                if (LoadImageWithFallback(target, rel, opacity)) return;
+            }
+            target.Source = null;
+            target.Visibility = Visibility.Collapsed;
+        }
+
+        private bool LoadImageWithFallback(System.Windows.Controls.Image target, string relPath, double opacity)
+        {
             bool SetFromUri(string uriString)
             {
                 try
@@ -139,29 +169,26 @@ namespace CMLauncher
                     bmp.CacheOption = BitmapCacheOption.OnLoad;
                     bmp.EndInit();
                     bmp.Freeze();
-                    BackdropImage.Source = bmp;
-                    BackdropImage.Visibility = Visibility.Visible;
-                    BackdropImage.Opacity = 0.9;
+                    target.Source = bmp;
+                    target.Visibility = Visibility.Visible;
+                    target.Opacity = opacity;
                     return true;
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Backdrop try failed for '{uriString}': {ex.Message}");
+                    Debug.WriteLine($"Image try failed for '{uriString}': {ex.Message}");
                     return false;
                 }
             }
 
             // 1) Application resource
-            if (SetFromUri($"pack://application:,,,/{relPath}")) return;
-            // 2) Site of origin (content copied to output directory)
-            if (SetFromUri($"pack://siteoforigin:,,,/{relPath}")) return;
-            // 3) Relative to base directory
+            if (SetFromUri($"pack://application:,,,/{relPath}")) return true;
+            // 2) Site of origin
+            if (SetFromUri($"pack://siteoforigin:,,,/{relPath}")) return true;
+            // 3) Local disk
             var diskPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relPath.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(diskPath) && SetFromUri(diskPath)) return;
-
-            // Fallback: hide if nothing worked
-            BackdropImage.Source = null;
-            BackdropImage.Visibility = Visibility.Collapsed;
+            if (File.Exists(diskPath) && SetFromUri(diskPath)) return true;
+            return false;
         }
 
         private void NavigateToContent(string contentTag)
@@ -170,6 +197,7 @@ namespace CMLauncher
             {
                 case "Home":
                     BackdropImage.Visibility = Visibility.Collapsed;
+                    WordartImage.Visibility = Visibility.Collapsed;
                     MainContentFrame.Navigate(new HomePage());
                     break;
                 case "CMZ":
@@ -182,10 +210,12 @@ namespace CMLauncher
                     break;
                 case "Settings":
                     BackdropImage.Visibility = Visibility.Collapsed;
+                    WordartImage.Visibility = Visibility.Collapsed;
                     MainContentFrame.Navigate(new SettingsPage());
                     break;
                 case "Changelog":
                     BackdropImage.Visibility = Visibility.Collapsed;
+                    WordartImage.Visibility = Visibility.Collapsed;
                     MainContentFrame.Navigate(new ChangelogPage());
                     break;
             }
