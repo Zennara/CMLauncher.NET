@@ -38,7 +38,7 @@
             </Setter>
         </Style>
 
-        <!-- Updated SidebarButtonStyle with proper handling of background and foreground -->
+        <!-- Sidebar button with explicit selected-state styling via attached property -->
         <Style x:Key="SidebarButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#CCCCCC"/>
@@ -47,7 +47,7 @@
             <Setter Property="Margin" Value="0,2"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/> <!-- Remove focus rectangle -->
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -61,10 +61,26 @@
                                               TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <ControlTemplate.Triggers>
+                            <!-- Hover visual for any item -->
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Background" Value="#3E3E3E"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
+                            <!-- Selected state visual via attached property -->
+                            <Trigger Property="local:SelectionProperties.IsSelected" Value="True">
+                                <Setter Property="Background" Value="#2F2F2F"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <!-- Hover + Selected: slightly brighter than selected -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="local:SelectionProperties.IsSelected" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Background" Value="#444444"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </MultiTrigger>
+                            <!-- Pressed visual -->
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="Background" Value="#505050"/>
                             </Trigger>
