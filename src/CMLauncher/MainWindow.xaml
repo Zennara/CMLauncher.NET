@@ -335,14 +335,20 @@
                 <StackPanel Grid.Row="1" Margin="0,0,0,10" x:Name="BottomSidebarPanel">
                     <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Changelog" Name="btnChangelog">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="≡" FontSize="14" Margin="0,0,10,0"/>
+                            <!-- Fixed 18x18 icon slot to align with game icons -->
+                            <Border Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center" Background="Transparent">
+                                <TextBlock Text="≡" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
                             <TextBlock Text="WHAT'S NEW" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
                     
                     <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Settings" Name="btnSettings">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚙" FontSize="14" Margin="0,0,10,0"/>
+                            <!-- Fixed 18x18 icon slot to align with game icons -->
+                            <Border Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center" Background="Transparent">
+                                <TextBlock Text="⚙" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
                             <TextBlock Text="SETTINGS" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
