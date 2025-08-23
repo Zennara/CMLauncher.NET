@@ -372,8 +372,11 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Content frame -->
-            <Frame x:Name="MainContentFrame" Grid.Row="0" NavigationUIVisibility="Hidden" Background="{StaticResource ContentBackgroundBrush}"/>
+            <!-- Content host with backdrop -->
+            <Grid Grid.Row="0">
+                <Image x:Name="BackdropImage" Stretch="UniformToFill" Opacity="0.9"/>
+                <Frame x:Name="MainContentFrame" NavigationUIVisibility="Hidden" Background="Transparent"/>
+            </Grid>
 
             <!-- Bottom panel with version selection and play button -->
             <Grid Grid.Row="1" Background="{StaticResource SidebarBackgroundBrush}">
@@ -403,7 +406,7 @@
                         </Grid>
                     </ToggleButton>
 
-                    <!-- Popup above; remove padding so width equals content (min = toggle width) and edges align -->
+                    <!-- Popup above; width anchored to toggle via MinWidth -->
                     <Popup x:Name="InstallPopup"
                            PlacementTarget="{Binding ElementName=InstallToggle}"
                            Placement="Top"

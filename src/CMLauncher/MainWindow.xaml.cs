@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace CMLauncher
 {
@@ -121,23 +123,69 @@ namespace CMLauncher
             currentlySelectedSidebarButton = buttonToSelect;
         }
 
+        private void SetBackdropFor(string tag)
+        {
+            // Try multiple sources: Resource (pack application), SiteOfOrigin (content/copied), and file path under app base
+            var fileName = tag == "CMW" ? "cmw-backdrop.png" : "cmz-backdrop.png";
+            var relPath = $"assets/backdrops/{fileName}";
+
+            bool SetFromUri(string uriString)
+            {
+                try
+                {
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.UriSource = new Uri(uriString, UriKind.RelativeOrAbsolute);
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.EndInit();
+                    bmp.Freeze();
+                    BackdropImage.Source = bmp;
+                    BackdropImage.Visibility = Visibility.Visible;
+                    BackdropImage.Opacity = 0.9;
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Backdrop try failed for '{uriString}': {ex.Message}");
+                    return false;
+                }
+            }
+
+            // 1) Application resource
+            if (SetFromUri($"pack://application:,,,/{relPath}")) return;
+            // 2) Site of origin (content copied to output directory)
+            if (SetFromUri($"pack://siteoforigin:,,,/{relPath}")) return;
+            // 3) Relative to base directory
+            var diskPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relPath.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(diskPath) && SetFromUri(diskPath)) return;
+
+            // Fallback: hide if nothing worked
+            BackdropImage.Source = null;
+            BackdropImage.Visibility = Visibility.Collapsed;
+        }
+
         private void NavigateToContent(string contentTag)
         {
             switch (contentTag)
             {
                 case "Home":
+                    BackdropImage.Visibility = Visibility.Collapsed;
                     MainContentFrame.Navigate(new HomePage());
                     break;
                 case "CMZ":
+                    SetBackdropFor("CMZ");
                     MainContentFrame.Navigate(new ModContentPage("CMZ"));
                     break;
                 case "CMW":
+                    SetBackdropFor("CMW");
                     MainContentFrame.Navigate(new ModContentPage("CMW"));
                     break;
                 case "Settings":
+                    BackdropImage.Visibility = Visibility.Collapsed;
                     MainContentFrame.Navigate(new SettingsPage());
                     break;
                 case "Changelog":
+                    BackdropImage.Visibility = Visibility.Collapsed;
                     MainContentFrame.Navigate(new ChangelogPage());
                     break;
             }

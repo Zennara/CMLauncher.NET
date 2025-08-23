@@ -12,6 +12,8 @@
     <!-- Include images as WPF resources -->
     <Resource Include="assets\logos\cmz.png" Condition="Exists('assets\\logos\\cmz.png')" />
     <Resource Include="assets\logos\cmw.png" Condition="Exists('assets\\logos\\cmw.png')" />
+    <Resource Include="assets\backdrops\cmz-backdrop.png" Condition="Exists('assets\\backdrops\\cmz-backdrop.png')" />
+    <Resource Include="assets\backdrops\cmw-backdrop.png" Condition="Exists('assets\\backdrops\\cmw-backdrop.png')" />
   </ItemGroup>
 
 </Project>
