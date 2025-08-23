@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 namespace CMLauncher
@@ -25,6 +26,7 @@ namespace CMLauncher
 
         public static string GetInstallationsPath(string gameKey) => Path.Combine(GetGameRoot(gameKey), "installations");
         public static string GetVersionsPath(string gameKey) => Path.Combine(GetGameRoot(gameKey), "versions");
+        public static string GetBlocksAssetsPath() => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks");
 
         public static void EnsureDirectoryStructure()
         {
@@ -47,6 +49,7 @@ namespace CMLauncher
                 var name = Path.GetFileName(dir);
                 string version = "Unknown";
                 DateTime? ts = null;
+                string? icon = null;
                 var infoFile = Path.Combine(dir, "installation-info.json");
                 try
                 {
@@ -59,6 +62,7 @@ namespace CMLauncher
                             version = doc.version ?? version;
                             if (!string.IsNullOrWhiteSpace(doc.timestamp) && DateTime.TryParse(doc.timestamp, out var dt))
                                 ts = dt;
+                            icon = doc.icon;
                         }
                     }
                 }
@@ -73,7 +77,8 @@ namespace CMLauncher
                     Name = name,
                     Version = version,
                     Timestamp = ts,
-                    RootPath = dir
+                    RootPath = dir,
+                    IconName = icon
                 });
             }
 
@@ -101,7 +106,21 @@ namespace CMLauncher
             return versions;
         }
 
-        public static InstallationInfo CreateInstallation(string gameKey, string name, string version)
+        public static List<string> LoadAvailableIcons()
+        {
+            var blocksPath = GetBlocksAssetsPath();
+            if (!Directory.Exists(blocksPath)) return new List<string>();
+            var names = Directory.GetFiles(blocksPath)
+                .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+                .Select(Path.GetFileName)
+                .Where(n => n != null)!
+                .Cast<string>()
+                .ToList();
+            names.Sort(StringComparer.OrdinalIgnoreCase);
+            return names;
+        }
+
+        public static InstallationInfo CreateInstallation(string gameKey, string name, string version, string? iconName = null)
         {
             var installsRoot = GetInstallationsPath(gameKey);
             Directory.CreateDirectory(installsRoot);
@@ -119,20 +138,33 @@ namespace CMLauncher
             Directory.CreateDirectory(Path.Combine(candidatePath, "Game"));
             Directory.CreateDirectory(Path.Combine(candidatePath, "Data"));
 
+            // Choose a random icon if none provided
+            if (string.IsNullOrWhiteSpace(iconName))
+            {
+                var icons = LoadAvailableIcons();
+                if (icons.Count > 0)
+                {
+                    var rnd = new Random();
+                    iconName = icons[rnd.Next(icons.Count)];
+                }
+            }
+
             var info = new InstallationInfo
             {
                 GameKey = gameKey,
                 Name = finalName,
                 Version = version,
-                Timestamp = null, // not set here; reserved for last played time
-                RootPath = candidatePath
+                Timestamp = null, // last played set elsewhere
+                RootPath = candidatePath,
+                IconName = iconName
             };
 
             var infoFile = Path.Combine(candidatePath, "installation-info.json");
             var json = JsonSerializer.Serialize(new InstallationInfoFile
             {
                 version = version,
-                timestamp = null
+                timestamp = null,
+                icon = iconName
             }, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(infoFile, json);
 
@@ -147,6 +179,7 @@ namespace CMLauncher
         public string Version { get; set; } = string.Empty;
         public DateTime? Timestamp { get; set; }
         public string RootPath { get; set; } = string.Empty;
+        public string? IconName { get; set; }
 
         public string GamePath => Path.Combine(RootPath, "Game");
         public string DataPath => Path.Combine(RootPath, "Data");
@@ -156,5 +189,6 @@ namespace CMLauncher
     {
         public string? version { get; set; }
         public string? timestamp { get; set; }
+        public string? icon { get; set; }
     }
 }

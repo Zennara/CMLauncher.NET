@@ -1,7 +1,9 @@
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace CMLauncher
 {
@@ -78,6 +80,39 @@ namespace CMLauncher
 
             var panel = new StackPanel { Margin = new Thickness(20) };
 
+            // Icon selector
+            var iconRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
+            var currentIcon = new Image { Width = 48, Height = 48, Stretch = Stretch.Uniform };
+            var allIcons = InstallationService.LoadAvailableIcons();
+            string? selectedIcon = allIcons.FirstOrDefault();
+            SetIconImage(currentIcon, selectedIcon);
+
+            var iconToggle = new ToggleButton { Content = "Choose Icon", Margin = new Thickness(12, 10, 0, 0), Padding = new Thickness(10, 6, 10, 6) };
+            var iconPopup = new Popup
+            {
+                PlacementTarget = iconToggle,
+                Placement = PlacementMode.Bottom,
+                StaysOpen = false,
+                AllowsTransparency = true
+            };
+            var iconScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 300, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)) };
+            var iconWrap = new WrapPanel { Margin = new Thickness(8) };
+            foreach (var iconName in allIcons)
+            {
+                var img = new Image { Width = 40, Height = 40, Stretch = Stretch.Uniform, Margin = new Thickness(4) };
+                SetIconImage(img, iconName);
+                var btn = new Button { Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = Brushes.Transparent, Tag = iconName, Content = img };
+                btn.Click += (s, e) => { selectedIcon = iconName; SetIconImage(currentIcon, selectedIcon); iconPopup.IsOpen = false; iconToggle.IsChecked = false; };
+                iconWrap.Children.Add(btn);
+            }
+            iconScroll.Content = iconWrap;
+            iconPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), Child = iconScroll };
+            iconToggle.Checked += (s, e) => iconPopup.IsOpen = true;
+            iconToggle.Unchecked += (s, e) => iconPopup.IsOpen = false;
+            iconRow.Children.Add(currentIcon);
+            iconRow.Children.Add(iconToggle);
+            panel.Children.Add(iconRow);
+
             panel.Children.Add(new TextBlock { Text = "Name", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
             var nameBox = new TextBox { Width = 360, Text = "Unnamed installation" };
             panel.Children.Add(nameBox);
@@ -100,7 +135,7 @@ namespace CMLauncher
             {
                 var name = string.IsNullOrWhiteSpace(nameBox.Text) ? "Unnamed installation" : nameBox.Text.Trim();
                 var version = versionCombo.SelectedItem?.ToString() ?? "Steam Version";
-                InstallationService.CreateInstallation(_gameKey, name, version);
+                InstallationService.CreateInstallation(_gameKey, name, version, selectedIcon);
                 dlg.Close();
                 RefreshList();
             };
@@ -110,6 +145,27 @@ namespace CMLauncher
 
             dlg.Content = panel;
             dlg.ShowDialog();
+        }
+
+        private static void SetIconImage(Image img, string? iconName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(iconName)) { img.Source = null; return; }
+                var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks", iconName);
+                if (!System.IO.File.Exists(path)) { img.Source = null; return; }
+                var bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.UriSource = new System.Uri(path, System.UriKind.Absolute);
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.EndInit();
+                bmp.Freeze();
+                img.Source = bmp;
+            }
+            catch
+            {
+                img.Source = null;
+            }
         }
 
         private void RefreshList()
