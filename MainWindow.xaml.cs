@@ -12,6 +12,7 @@ namespace CMLauncher
     {
         // Define the InstanceComboBox if it's not in XAML
         private ComboBox InstanceComboBox;
+        private string currentSidebarSelection = "CMZ"; // Track current sidebar selection
 
         public MainWindow()
         {
@@ -47,7 +48,8 @@ namespace CMLauncher
                 switch (tag)
                 {
                     case "Play":
-                        // Already on play screen
+                        // Navigate back to the currently selected mod content
+                        NavigateToContent(currentSidebarSelection);
                         break;
                     case "Installations":
                         MainContentFrame.Navigate(new InstallationsPage());
@@ -79,6 +81,12 @@ namespace CMLauncher
                 button.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
                 button.Foreground = new SolidColorBrush(Colors.White);
                 
+                // Store current selection if it's a mod (CMZ or CMW)
+                if (tag == "CMZ" || tag == "CMW")
+                {
+                    currentSidebarSelection = tag;
+                }
+                
                 NavigateToContent(tag);
             }
         }
@@ -103,6 +111,60 @@ namespace CMLauncher
                 case "Changelog":
                     MainContentFrame.Navigate(new ChangelogPage());
                     break;
+            }
+            
+            // Find and select the Play tab when showing content pages
+            if (contentTag == "CMZ" || contentTag == "CMW")
+            {
+                SelectTabButton("Play");
+            }
+        }
+        
+        private void SelectTabButton(string tag)
+        {
+            // Find and visually select the tab button with the given tag
+            foreach (var child in FindVisualChildren<Button>(this))
+            {
+                if (child.Tag?.ToString() == tag && child.Style == FindResource("TabButtonStyle"))
+                {
+                    // Reset all tab buttons
+                    if (child.Parent is StackPanel tabPanel)
+                    {
+                        foreach (var tabChild in tabPanel.Children)
+                        {
+                            if (tabChild is Button b)
+                            {
+                                b.BorderThickness = new Thickness(0);
+                            }
+                        }
+                    }
+                    
+                    // Select this tab button
+                    child.BorderThickness = new Thickness(0, 0, 0, 2);
+                    child.BorderBrush = new SolidColorBrush(Color.FromRgb(76, 175, 80));
+                    break;
+                }
+            }
+        }
+        
+        // Helper method to find visual children of a specified type
+        private static System.Collections.Generic.IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
+        {
+            if (depObj != null)
+            {
+                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+                {
+                    DependencyObject child = VisualTreeHelper.GetChild(depObj, i);
+                    if (child != null && child is T t)
+                    {
+                        yield return t;
+                    }
+
+                    foreach (T childOfChild in FindVisualChildren<T>(child))
+                    {
+                        yield return childOfChild;
+                    }
+                }
             }
         }
 
