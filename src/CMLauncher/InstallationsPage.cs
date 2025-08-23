@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -17,7 +18,10 @@ namespace CMLauncher
             var root = new StackPanel { Margin = new Thickness(20) };
 
             // Header
-            root.Children.Add(new TextBlock
+            var headerGrid = new Grid();
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            headerGrid.Children.Add(new TextBlock
             {
                 Text = "Installations",
                 FontSize = 24,
@@ -25,6 +29,20 @@ namespace CMLauncher
                 Foreground = Brushes.White,
                 Margin = new Thickness(0, 0, 0, 20)
             });
+            var newBtn = new Button
+            {
+                Content = "New Installation",
+                Padding = new Thickness(15, 8, 15, 8),
+                Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"),
+                Foreground = Brushes.White,
+                BorderThickness = new Thickness(0),
+                Margin = new Thickness(10, 0, 0, 20)
+            };
+            newBtn.Click += (s, e) => ShowCreateDialog();
+            Grid.SetColumn(newBtn, 1);
+            headerGrid.Children.Add(newBtn);
+
+            root.Children.Add(headerGrid);
 
             _listHost = new StackPanel();
             root.Children.Add(_listHost);
@@ -32,6 +50,55 @@ namespace CMLauncher
             Content = root;
 
             RefreshList();
+        }
+
+        private void ShowCreateDialog()
+        {
+            var dlg = new Window
+            {
+                Title = "Create new installation",
+                Owner = Application.Current.MainWindow,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                SizeToContent = SizeToContent.WidthAndHeight,
+                Background = new SolidColorBrush(Color.FromRgb(27, 27, 27)),
+                Foreground = Brushes.White,
+                ResizeMode = ResizeMode.NoResize
+            };
+
+            var panel = new StackPanel { Margin = new Thickness(20) };
+
+            panel.Children.Add(new TextBlock { Text = "Name", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
+            var nameBox = new TextBox { Width = 360, Text = "Unnamed installation" };
+            panel.Children.Add(nameBox);
+
+            panel.Children.Add(new TextBlock { Text = "Version", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 6) });
+            var versionCombo = new ComboBox { Width = 360 };
+            versionCombo.Items.Add("Steam Version");
+            foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
+            {
+                versionCombo.Items.Add(v);
+            }
+            versionCombo.SelectedIndex = 0;
+            panel.Children.Add(versionCombo);
+
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
+            var cancel = new Button { Content = "Cancel", Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 6, 14, 6) };
+            cancel.Click += (s, e) => dlg.Close();
+            var create = new Button { Content = "Install", Padding = new Thickness(14, 6, 14, 6), Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"), Foreground = Brushes.White, BorderThickness = new Thickness(0) };
+            create.Click += (s, e) =>
+            {
+                var name = string.IsNullOrWhiteSpace(nameBox.Text) ? "Unnamed installation" : nameBox.Text.Trim();
+                var version = versionCombo.SelectedItem?.ToString() ?? "Steam Version";
+                InstallationService.CreateInstallation(_gameKey, name, version);
+                dlg.Close();
+                RefreshList();
+            };
+            buttons.Children.Add(cancel);
+            buttons.Children.Add(create);
+            panel.Children.Add(buttons);
+
+            dlg.Content = panel;
+            dlg.ShowDialog();
         }
 
         private void RefreshList()

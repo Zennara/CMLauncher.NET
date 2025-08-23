@@ -85,6 +85,59 @@ namespace CMLauncher
             });
             return list;
         }
+
+        public static List<string> LoadAvailableVersions(string gameKey)
+        {
+            var versions = new List<string>();
+            var path = GetVersionsPath(gameKey);
+            if (Directory.Exists(path))
+            {
+                foreach (var dir in Directory.GetDirectories(path))
+                {
+                    versions.Add(Path.GetFileName(dir));
+                }
+            }
+            versions.Sort(StringComparer.OrdinalIgnoreCase);
+            return versions;
+        }
+
+        public static InstallationInfo CreateInstallation(string gameKey, string name, string version)
+        {
+            var installsRoot = GetInstallationsPath(gameKey);
+            Directory.CreateDirectory(installsRoot);
+
+            string finalName = name;
+            string candidatePath = Path.Combine(installsRoot, finalName);
+            int i = 1;
+            while (Directory.Exists(candidatePath))
+            {
+                finalName = $"{name} ({i++})";
+                candidatePath = Path.Combine(installsRoot, finalName);
+            }
+
+            Directory.CreateDirectory(candidatePath);
+            Directory.CreateDirectory(Path.Combine(candidatePath, "Game"));
+            Directory.CreateDirectory(Path.Combine(candidatePath, "Data"));
+
+            var info = new InstallationInfo
+            {
+                GameKey = gameKey,
+                Name = finalName,
+                Version = version,
+                Timestamp = DateTime.UtcNow,
+                RootPath = candidatePath
+            };
+
+            var infoFile = Path.Combine(candidatePath, "installation-info.json");
+            var json = JsonSerializer.Serialize(new InstallationInfoFile
+            {
+                version = version,
+                timestamp = info.Timestamp?.ToString("o")
+            }, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(infoFile, json);
+
+            return info;
+        }
     }
 
     public class InstallationInfo
