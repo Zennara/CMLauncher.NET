@@ -7,8 +7,37 @@
         mc:Ignorable="d"
         Title="CM Launcher" Height="600" Width="1000"
         WindowStartupLocation="CenterScreen"
-        Background="#202020">
+        Background="#242424">
     <Window.Resources>
+        <Style x:Key="TabButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#3E3E3E"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#505050"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="SidebarButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#CCCCCC"/>
@@ -30,6 +59,7 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Background" Value="#3E3E3E"/>
+                                <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="Background" Value="#505050"/>
@@ -45,7 +75,7 @@
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Padding" Value="40,12"/>
+            <Setter Property="Padding" Value="80,12"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -80,84 +110,146 @@
     </Window.Resources>
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="180"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
+        <!-- Top account info panel -->
+        <Border Grid.Column="0" Grid.Row="0" Background="#222222" BorderBrush="#333333" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Margin="10,5">
+                <Ellipse Width="30" Height="30" Fill="#555555" Margin="0,0,10,0"/>
+                <StackPanel>
+                    <TextBlock Text="Username" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
+                    <TextBlock Text="Account" Foreground="#AAAAAA" FontSize="11"/>
+                </StackPanel>
+                <Path Data="M 0,0 L 5,5 L 10,0" Stroke="White" StrokeThickness="1" 
+                      Margin="10,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Top header with tabs -->
+        <Grid Grid.Column="1" Grid.Row="0" Background="#222222">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Edition title -->
+            <TextBlock Grid.Row="0" Text="MINECRAFT: JAVA EDITION" Foreground="White" 
+                       FontWeight="Bold" Margin="20,5,0,0" FontSize="12"/>
+            
+            <!-- Tab buttons -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal">
+                <Button Content="Play" Style="{StaticResource TabButtonStyle}" Tag="Play" Click="TabButton_Click" 
+                        BorderThickness="0,0,0,2" BorderBrush="#4CAF50"/>
+                <Button Content="Installations" Style="{StaticResource TabButtonStyle}" Tag="Installations" Click="TabButton_Click"/>
+                <Button Content="Skins" Style="{StaticResource TabButtonStyle}" Tag="Skins" Click="TabButton_Click"/>
+                <Button Content="Patch Notes" Style="{StaticResource TabButtonStyle}" Tag="PatchNotes" Click="TabButton_Click"/>
+            </StackPanel>
+        </Grid>
+
         <!-- Left sidebar -->
-        <Border Grid.Column="0" Background="#252525" BorderBrush="#353535" BorderThickness="0,0,1,0">
+        <Border Grid.Column="0" Grid.Row="1" Background="#252525">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="60"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Logo/Header -->
-                <TextBlock Text="CM Launcher" 
-                           Foreground="White" 
-                           FontSize="18" 
-                           FontWeight="Bold"
-                           VerticalAlignment="Center"
-                           Margin="15,0,0,0"/>
-
                 <!-- Sidebar navigation -->
-                <StackPanel Grid.Row="1" Margin="0,20,0,0">
-                    <Button Content="CMZ" Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="CMZ"/>
-                    <Button Content="CMW" Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="CMW"/>
-                    <Button Content="Settings" Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Settings"/>
+                <StackPanel Grid.Row="0" Margin="0,5,0,0">
+                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Home">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⌂" FontSize="16" Margin="0,0,10,0"/>
+                            <TextBlock Text="HOME" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="CMZ" 
+                            Background="#333333" Foreground="White">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="◆" FontSize="14" Margin="0,0,10,0"/>
+                            <StackPanel>
+                                <TextBlock Text="MINECRAFT:" FontSize="10" Opacity="0.7"/>
+                                <TextBlock Text="CMZ EDITION" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="CMW">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="◆" FontSize="14" Margin="0,0,10,0"/>
+                            <StackPanel>
+                                <TextBlock Text="MINECRAFT:" FontSize="10" Opacity="0.7"/>
+                                <TextBlock Text="CMW EDITION" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Other game versions could be added here -->
                 </StackPanel>
 
-                <!-- Instance selection -->
-                <StackPanel Grid.Row="2" Margin="15,0,15,15">
-                    <TextBlock Text="Instance" Foreground="#AAAAAA" Margin="0,0,0,5"/>
-                    <ComboBox x:Name="InstanceComboBox" 
-                              Style="{StaticResource InstanceComboBoxStyle}"
-                              SelectionChanged="InstanceComboBox_SelectionChanged">
-                        <ComboBoxItem Content="Default"/>
-                        <ComboBoxItem Content="Instance 1"/>
-                        <ComboBoxItem Content="Instance 2"/>
-                    </ComboBox>
+                <!-- Bottom sidebar items -->
+                <StackPanel Grid.Row="1" Margin="0,0,0,10">
+                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Changelog">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="≡" FontSize="14" Margin="0,0,10,0"/>
+                            <TextBlock Text="WHAT'S NEW" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Settings">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚙" FontSize="14" Margin="0,0,10,0"/>
+                            <TextBlock Text="SETTINGS" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                    
+                    <TextBlock Text="v1.0.0" FontSize="11" Foreground="#888888" Margin="15,5,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Main content area -->
-        <Grid Grid.Column="1">
+        <Grid Grid.Column="1" Grid.Row="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- Content frame -->
-            <Frame x:Name="MainContentFrame" Grid.Row="0" NavigationUIVisibility="Hidden" Margin="20"/>
+            <Frame x:Name="MainContentFrame" Grid.Row="0" NavigationUIVisibility="Hidden" Background="#202020"/>
 
-            <!-- Bottom panel with play button -->
-            <Border Grid.Row="1" Background="#252525" Padding="20">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    
-                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock x:Name="SelectedModTextBlock" 
-                                   Text="Selected: CMZ" 
-                                   Foreground="White" 
-                                   FontSize="16"/>
-                        <TextBlock x:Name="VersionTextBlock" 
-                                   Text="Version: 1.0.0" 
-                                   Foreground="#AAAAAA" 
-                                   FontSize="12"/>
+            <!-- Bottom panel with version selection and play button -->
+            <Grid Grid.Row="1" Background="#252525">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Version selector dropdown -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="10,15">
+                    <TextBlock Text="▼" VerticalAlignment="Center" Foreground="#AAAAAA" Margin="0,0,5,0"/>
+                    <StackPanel>
+                        <TextBlock x:Name="VersionNumberTextBlock" Text="1.21.5-forge-55.0.23" Foreground="White" FontSize="12"/>
                     </StackPanel>
-                    
-                    <Button Grid.Column="1" 
-                            Content="PLAY" 
-                            Style="{StaticResource PlayButtonStyle}"
-                            Click="PlayButton_Click"/>
-                </Grid>
-            </Border>
+                </StackPanel>
+
+                <!-- Additional info could go here -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0">
+                    <!-- Can add content like "Included with Xbox Game Pass" here -->
+                </StackPanel>
+                
+                <!-- Play button -->
+                <Button Grid.Column="2" Content="PLAY" Style="{StaticResource PlayButtonStyle}" 
+                        Click="PlayButton_Click" Margin="10"/>
+            </Grid>
         </Grid>
     </Grid>
 </Window>
