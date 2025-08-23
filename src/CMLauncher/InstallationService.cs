@@ -124,7 +124,7 @@ namespace CMLauncher
                 GameKey = gameKey,
                 Name = finalName,
                 Version = version,
-                Timestamp = DateTime.UtcNow,
+                Timestamp = null, // not set here; reserved for last played time
                 RootPath = candidatePath
             };
 
@@ -132,7 +132,7 @@ namespace CMLauncher
             var json = JsonSerializer.Serialize(new InstallationInfoFile
             {
                 version = version,
-                timestamp = info.Timestamp?.ToString("o")
+                timestamp = null
             }, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(infoFile, json);
 

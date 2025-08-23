@@ -44,8 +44,11 @@ namespace CMLauncher
 
             root.Children.Add(headerGrid);
 
+            // Scrollable list
+            var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
             _listHost = new StackPanel();
-            root.Children.Add(_listHost);
+            scroll.Content = _listHost;
+            root.Children.Add(scroll);
 
             Content = root;
 
