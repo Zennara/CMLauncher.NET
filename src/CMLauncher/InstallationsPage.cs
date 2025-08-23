@@ -17,12 +17,10 @@ namespace CMLauncher
             _gameKey = gameKey;
             Background = new SolidColorBrush(Color.FromRgb(32, 32, 32));
 
-            // Root layout uses Grid so the ScrollViewer gets a constrained height and can scroll
             var root = new Grid { Margin = new Thickness(20) };
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-            // Header with button
             var headerGrid = new Grid();
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -49,7 +47,6 @@ namespace CMLauncher
             Grid.SetRow(headerGrid, 0);
             root.Children.Add(headerGrid);
 
-            // Scrollable list area
             var scroll = new ScrollViewer
             {
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -80,38 +77,64 @@ namespace CMLauncher
 
             var panel = new StackPanel { Margin = new Thickness(20) };
 
-            // Icon selector
-            var iconRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
-            var currentIcon = new Image { Width = 48, Height = 48, Stretch = Stretch.Uniform };
-            var allIcons = InstallationService.LoadAvailableIcons();
-            string? selectedIcon = allIcons.FirstOrDefault();
-            SetIconImage(currentIcon, selectedIcon);
+            // Icon selector - centered with small caret toggle
+            var iconArea = new Grid { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 12) };
+            iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            var iconToggle = new ToggleButton { Content = "Choose Icon", Margin = new Thickness(12, 10, 0, 0), Padding = new Thickness(10, 6, 10, 6) };
+            var currentIcon = new Image { Width = 56, Height = 56, Stretch = Stretch.Uniform };
+            var allIcons = InstallationService.LoadAvailableIcons();
+            string? selectedIcon = null;
+            // pick a random default for preview and selection
+            if (allIcons.Count > 0)
+            {
+                var rnd = new System.Random();
+                selectedIcon = allIcons[rnd.Next(allIcons.Count)];
+            }
+            SetIconImage(currentIcon, selectedIcon);
+            Grid.SetColumn(currentIcon, 0);
+            iconArea.Children.Add(currentIcon);
+
+            var caretToggle = new ToggleButton
+            {
+                Margin = new Thickness(8, 0, 0, 0),
+                Padding = new Thickness(6, 0, 6, 0),
+                Background = Brushes.Transparent,
+                Foreground = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(64, 64, 64)),
+                BorderThickness = new Thickness(1),
+                VerticalAlignment = VerticalAlignment.Center,
+                FocusVisualStyle = null,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                Content = "\uE70D"
+            };
+            Grid.SetColumn(caretToggle, 1);
+            iconArea.Children.Add(caretToggle);
+
             var iconPopup = new Popup
             {
-                PlacementTarget = iconToggle,
+                PlacementTarget = caretToggle,
                 Placement = PlacementMode.Bottom,
                 StaysOpen = false,
                 AllowsTransparency = true
             };
-            var iconScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 300, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)) };
+            var iconScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 260, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)) };
             var iconWrap = new WrapPanel { Margin = new Thickness(8) };
             foreach (var iconName in allIcons)
             {
                 var img = new Image { Width = 40, Height = 40, Stretch = Stretch.Uniform, Margin = new Thickness(4) };
                 SetIconImage(img, iconName);
                 var btn = new Button { Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = Brushes.Transparent, Tag = iconName, Content = img };
-                btn.Click += (s, e) => { selectedIcon = iconName; SetIconImage(currentIcon, selectedIcon); iconPopup.IsOpen = false; iconToggle.IsChecked = false; };
+                btn.Click += (s, e) => { selectedIcon = iconName; SetIconImage(currentIcon, selectedIcon); iconPopup.IsOpen = false; caretToggle.IsChecked = false; };
                 iconWrap.Children.Add(btn);
             }
             iconScroll.Content = iconWrap;
-            iconPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), Child = iconScroll };
-            iconToggle.Checked += (s, e) => iconPopup.IsOpen = true;
-            iconToggle.Unchecked += (s, e) => iconPopup.IsOpen = false;
-            iconRow.Children.Add(currentIcon);
-            iconRow.Children.Add(iconToggle);
-            panel.Children.Add(iconRow);
+            iconPopup.Child = new Border { Width = 420, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), Child = iconScroll };
+            caretToggle.Checked += (s, e) => iconPopup.IsOpen = true;
+            caretToggle.Unchecked += (s, e) => iconPopup.IsOpen = false;
+            iconPopup.Closed += (s, e) => { caretToggle.IsChecked = false; };
+
+            panel.Children.Add(iconArea);
 
             panel.Children.Add(new TextBlock { Text = "Name", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
             var nameBox = new TextBox { Width = 360, Text = "Unnamed installation" };
