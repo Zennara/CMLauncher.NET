@@ -6,6 +6,20 @@ namespace CMLauncher
 {
     public class SettingsPage : Page
     {
+        private Brush GetAccentBrush()
+        {
+            var fallback = new SolidColorBrush(Color.FromRgb(183, 28, 28)); // #B71C1C
+            try
+            {
+                if (Application.Current?.MainWindow != null && Application.Current.MainWindow.Resources.Contains("AccentBrush"))
+                    return (Brush)Application.Current.MainWindow.Resources["AccentBrush"];
+                if (Application.Current?.Resources != null && Application.Current.Resources.Contains("AccentBrush"))
+                    return (Brush)Application.Current.Resources["AccentBrush"];
+            }
+            catch { }
+            return fallback;
+        }
+
         public SettingsPage()
         {
             var scrollViewer = new ScrollViewer();
@@ -128,7 +142,7 @@ namespace CMLauncher
                 Content = "Save Settings",
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Padding = new Thickness(20, 10, 20, 10),
-                Background = new SolidColorBrush(Color.FromRgb(76, 175, 80)),
+                Background = GetAccentBrush(),
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
                 Margin = new Thickness(0, 20, 0, 0)

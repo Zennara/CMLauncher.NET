@@ -6,6 +6,21 @@ namespace CMLauncher
 {
     public class InstallationsPage : Page
     {
+        private Brush GetAccentBrush()
+        {
+            // Try to get AccentBrush from MainWindow resources, then App resources, else fallback to red
+            var fallback = new SolidColorBrush(Color.FromRgb(183, 28, 28)); // #B71C1C
+            try
+            {
+                if (Application.Current?.MainWindow != null && Application.Current.MainWindow.Resources.Contains("AccentBrush"))
+                    return (Brush)Application.Current.MainWindow.Resources["AccentBrush"];
+                if (Application.Current?.Resources != null && Application.Current.Resources.Contains("AccentBrush"))
+                    return (Brush)Application.Current.Resources["AccentBrush"];
+            }
+            catch { }
+            return fallback;
+        }
+
         public InstallationsPage()
         {
             var grid = new Grid
@@ -42,7 +57,7 @@ namespace CMLauncher
             {
                 Content = "New Installation",
                 Padding = new Thickness(15, 8, 15, 8), // Fixed - using all four parameters
-                Background = new SolidColorBrush(Color.FromRgb(76, 175, 80)),
+                Background = GetAccentBrush(),
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
                 HorizontalAlignment = HorizontalAlignment.Left,
@@ -109,7 +124,7 @@ namespace CMLauncher
             {
                 Content = "Play",
                 Padding = new Thickness(15, 5, 15, 5), // Fixed - using all four parameters
-                Background = new SolidColorBrush(Color.FromRgb(76, 175, 80)),
+                Background = GetAccentBrush(),
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
                 Margin = new Thickness(0, 0, 10, 0) // Fixed - using all four parameters

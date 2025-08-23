@@ -41,6 +41,12 @@ namespace CMLauncher
             };
         }
 
+        private Brush GetAccentBrush()
+        {
+            // Safely fetch the accent brush defined in XAML resources
+            return (Brush)FindResource("AccentBrush");
+        }
+
         private void TabButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is string tag)
@@ -51,7 +57,7 @@ namespace CMLauncher
                 }
                 
                 button.BorderThickness = new Thickness(0, 0, 0, 2);
-                button.BorderBrush = new SolidColorBrush(Color.FromRgb(76, 175, 80));
+                button.BorderBrush = GetAccentBrush();
                 
                 switch (tag)
                 {
@@ -144,6 +150,7 @@ namespace CMLauncher
         
         private void SelectTabButton(string tag)
         {
+            var accent = GetAccentBrush();
             foreach (var child in TabsPanel.Children)
             {
                 if (child is Button b)
@@ -151,7 +158,7 @@ namespace CMLauncher
                     if (b.Tag?.ToString() == tag)
                     {
                         b.BorderThickness = new Thickness(0, 0, 0, 2);
-                        b.BorderBrush = new SolidColorBrush(Color.FromRgb(76, 175, 80));
+                        b.BorderBrush = accent;
                     }
                     else
                     {

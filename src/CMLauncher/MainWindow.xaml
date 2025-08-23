@@ -7,8 +7,18 @@
         mc:Ignorable="d"
         Title="CM Launcher" Height="600" Width="1000"
         WindowStartupLocation="CenterScreen"
-        Background="#242424">
+        Background="#151515">
     <Window.Resources>
+        <!-- Theming brushes: darker base with CastleMiner Z red accent -->
+        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#151515"/>
+        <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#1B1B1B"/>
+        <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#1A1A1A"/>
+        <SolidColorBrush x:Key="ContentBackgroundBrush" Color="#121212"/>
+
+        <SolidColorBrush x:Key="AccentBrush" Color="#B71C1C"/>
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#D32F2F"/>
+        <SolidColorBrush x:Key="AccentPressedBrush" Color="#8E1515"/>
+
         <Style x:Key="TabButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#CCCCCC"/>
@@ -27,10 +37,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#3E3E3E"/>
+                                <Setter Property="Background" Value="#2A2A2A"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#505050"/>
+                                <Setter Property="Background" Value="#303030"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -63,12 +73,12 @@
                         <ControlTemplate.Triggers>
                             <!-- Hover visual for any item -->
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#3E3E3E"/>
+                                <Setter Property="Background" Value="#2A2A2A"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <!-- Selected state visual via attached property -->
                             <Trigger Property="local:SelectionProperties.IsSelected" Value="True">
-                                <Setter Property="Background" Value="#2F2F2F"/>
+                                <Setter Property="Background" Value="#202020"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <!-- Hover + Selected: slightly brighter than selected -->
@@ -77,12 +87,12 @@
                                     <Condition Property="IsMouseOver" Value="True"/>
                                     <Condition Property="local:SelectionProperties.IsSelected" Value="True"/>
                                 </MultiTrigger.Conditions>
-                                <Setter Property="Background" Value="#444444"/>
+                                <Setter Property="Background" Value="#2E2E2E"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </MultiTrigger>
                             <!-- Pressed visual -->
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#505050"/>
+                                <Setter Property="Background" Value="#333333"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -91,7 +101,7 @@
         </Style>
         
         <Style x:Key="PlayButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#4CAF50"/>
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -108,10 +118,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#3E8E41"/>
+                                <Setter Property="Background" Value="{StaticResource AccentHoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#2E7D32"/>
+                                <Setter Property="Background" Value="{StaticResource AccentPressedBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -120,9 +130,9 @@
         </Style>
 
         <Style x:Key="InstanceComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Background" Value="#303030"/>
+            <Setter Property="Background" Value="#1E1E1E"/>
             <Setter Property="Foreground" Value="#CCCCCC"/>
-            <Setter Property="BorderBrush" Value="#505050"/>
+            <Setter Property="BorderBrush" Value="#2E2E2E"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,5"/>
             <Setter Property="FontSize" Value="13"/>
@@ -143,10 +153,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="root" Property="Background" Value="#2D2D2D"/>
+                                <Setter TargetName="root" Property="Background" Value="#252525"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="root" Property="Background" Value="#303030"/>
+                                <Setter TargetName="root" Property="Background" Value="#2B2B2B"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -156,7 +166,7 @@
 
         <!-- Menu item style inside popup -->
         <Style x:Key="InstallMenuItemStyle" TargetType="Button">
-            <Setter Property="Background" Value="#333333"/>
+            <Setter Property="Background" Value="#222222"/>
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="10"/>
@@ -168,9 +178,9 @@
                             <ContentPresenter/>
                         </Border>
                         <ControlTemplate.Triggers>
-                            <!-- Selected visual: Minecraft green -->
+                            <!-- Selected visual: CastleMiner red -->
                             <Trigger Property="local:SelectionProperties.IsSelected" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="#4CAF50"/>
+                                <Setter TargetName="bg" Property="Background" Value="{StaticResource AccentBrush}"/>
                                 <Setter Property="Foreground" Value="#FFFFFF"/>
                             </Trigger>
                             <!-- Hover when selected: slightly brighter -->
@@ -179,14 +189,14 @@
                                     <Condition Property="IsMouseOver" Value="True"/>
                                     <Condition Property="local:SelectionProperties.IsSelected" Value="True"/>
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="bg" Property="Background" Value="#5BCB60"/>
+                                <Setter TargetName="bg" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
                             </MultiTrigger>
                             <!-- Normal hover -->
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="#404040"/>
+                                <Setter TargetName="bg" Property="Background" Value="#2A2A2A"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="#4A4A4A"/>
+                                <Setter TargetName="bg" Property="Background" Value="#303030"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -209,10 +219,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="root" Property="Background" Value="#2A2A2A"/>
+                                <Setter TargetName="root" Property="Background" Value="#232323"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="root" Property="Background" Value="#2E2E2E"/>
+                                <Setter TargetName="root" Property="Background" Value="#262626"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -237,7 +247,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Top account info panel -->
-        <Border Grid.Column="0" Grid.Row="0" Background="#222222" BorderBrush="#333333" BorderThickness="0,0,0,1">
+        <Border Grid.Column="0" Grid.Row="0" Background="{StaticResource HeaderBackgroundBrush}" BorderBrush="#2A2A2A" BorderThickness="0,0,0,1">
             <Grid Margin="6,4">
                 <ToggleButton x:Name="AccountToggle" Style="{StaticResource AccountToggleStyle}" HorizontalAlignment="Stretch">
                     <Grid>
@@ -247,9 +257,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <!-- Avatar -->
-                        <Border Width="28" Height="28" CornerRadius="14" Background="#555555" VerticalAlignment="Center">
-                            <!-- optional image could be placed here -->
-                        </Border>
+                        <Border Width="28" Height="28" CornerRadius="14" Background="#3C3C3C" VerticalAlignment="Center"/>
                         <!-- Texts -->
                         <StackPanel Grid.Column="1" Margin="8,0,8,0" VerticalAlignment="Center">
                             <TextBlock x:Name="AccountDisplayName" Text="Username" Foreground="White" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis"/>
@@ -269,9 +277,8 @@
                        AllowsTransparency="True"
                        PopupAnimation="Fade"
                        IsOpen="{Binding IsChecked, ElementName=AccountToggle, Mode=TwoWay}">
-                    <Border Background="#242424" BorderThickness="1" BorderBrush="#3A3A3A" CornerRadius="4" Padding="6">
+                    <Border Background="{StaticResource AppBackgroundBrush}" BorderThickness="1" BorderBrush="#333333" CornerRadius="4" Padding="6">
                         <StackPanel MinWidth="{Binding ElementName=AccountToggle, Path=ActualWidth}">
-                            <TextBlock Text="HELP" Foreground="#7BD97B" FontWeight="Bold" Visibility="Collapsed"/>
                             <Button Style="{StaticResource AccountMenuItemStyle}" Click="Logout_Click">
                                 <TextBlock Text="LOG OUT" FontWeight="SemiBold"/>
                             </Button>
@@ -282,7 +289,7 @@
         </Border>
 
         <!-- Top header with tabs -->
-        <Grid Grid.Column="1" Grid.Row="0" Background="#222222">
+        <Grid Grid.Column="1" Grid.Row="0" Background="{StaticResource HeaderBackgroundBrush}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -296,14 +303,14 @@
             <!-- Tab buttons -->
             <StackPanel Grid.Row="1" Orientation="Horizontal" x:Name="TabsPanel">
                 <Button Content="Play" Style="{StaticResource TabButtonStyle}" Tag="Play" Click="TabButton_Click" 
-                        BorderThickness="0,0,0,2" BorderBrush="#4CAF50"/>
+                        BorderThickness="0,0,0,2" BorderBrush="{StaticResource AccentBrush}"/>
                 <Button Content="Installations" Style="{StaticResource TabButtonStyle}" Tag="Installations" Click="TabButton_Click"/>
                 <Button Content="Patch Notes" Style="{StaticResource TabButtonStyle}" Tag="PatchNotes" Click="TabButton_Click"/>
             </StackPanel>
         </Grid>
 
         <!-- Left sidebar -->
-        <Border Grid.Column="0" Grid.Row="1" Background="#252525">
+        <Border Grid.Column="0" Grid.Row="1" Background="{StaticResource SidebarBackgroundBrush}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -353,7 +360,7 @@
                         </StackPanel>
                     </Button>
                     
-                    <TextBlock Text="v1.0.0" FontSize="11" Foreground="#888888" Margin="15,5,0,0"/>
+                    <TextBlock Text="v1.0.0" FontSize="11" Foreground="#777777" Margin="15,5,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -366,10 +373,10 @@
             </Grid.RowDefinitions>
 
             <!-- Content frame -->
-            <Frame x:Name="MainContentFrame" Grid.Row="0" NavigationUIVisibility="Hidden" Background="#202020"/>
+            <Frame x:Name="MainContentFrame" Grid.Row="0" NavigationUIVisibility="Hidden" Background="{StaticResource ContentBackgroundBrush}"/>
 
             <!-- Bottom panel with version selection and play button -->
-            <Grid Grid.Row="1" Background="#252525">
+            <Grid Grid.Row="1" Background="{StaticResource SidebarBackgroundBrush}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -385,7 +392,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Border Width="28" Height="20" Background="#3A3A3A" CornerRadius="3" VerticalAlignment="Center">
+                            <Border Width="28" Height="20" Background="#2A2A2A" CornerRadius="3" VerticalAlignment="Center">
                                 <TextBlock Text="⚒" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
@@ -405,7 +412,7 @@
                            AllowsTransparency="True"
                            PopupAnimation="Fade"
                            IsOpen="{Binding IsChecked, ElementName=InstallToggle, Mode=TwoWay}">
-                        <Border Background="#242424" BorderThickness="0" CornerRadius="4" Padding="0">
+                        <Border Background="{StaticResource AppBackgroundBrush}" BorderThickness="0" CornerRadius="4" Padding="0">
                             <StackPanel x:Name="InstallItemsPanel" MinWidth="{Binding ElementName=InstallToggle, Path=ActualWidth}">
                                 <!-- Current/Forge selection -->
                                 <Button Style="{StaticResource InstallMenuItemStyle}" Click="SelectInstallation_Click" Tag="forge|1.21.5-forge-55.0.23">
@@ -414,7 +421,7 @@
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Border Width="28" Height="20" Background="#4CAF50" CornerRadius="3"/>
+                                        <Border Width="28" Height="20" Background="{StaticResource AccentBrush}" CornerRadius="3"/>
                                         <StackPanel Grid.Column="1" Margin="8,0">
                                             <TextBlock Text="forge" FontWeight="SemiBold"/>
                                             <TextBlock Text="1.21.5-forge-55.0.23" Foreground="#CFCFCF" FontSize="12"/>
@@ -422,7 +429,7 @@
                                     </Grid>
                                 </Button>
 
-                                <Separator Margin="0,6" Background="#404040" Height="1"/>
+                                <Separator Margin="0,6" Background="#303030" Height="1"/>
 
                                 <!-- Latest release -->
                                 <Button Style="{StaticResource InstallMenuItemStyle}" Click="SelectInstallation_Click" Tag="Latest release|1.21.8">
@@ -431,7 +438,7 @@
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Border Width="28" Height="20" Background="#6A9E3A" CornerRadius="3"/>
+                                        <Border Width="28" Height="20" Background="{StaticResource AccentBrush}" CornerRadius="3"/>
                                         <StackPanel Grid.Column="1" Margin="8,0">
                                             <TextBlock Text="Latest release" FontWeight="SemiBold"/>
                                             <TextBlock Text="1.21.8" Foreground="#CFCFCF" FontSize="12"/>
@@ -446,7 +453,7 @@
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Border Width="28" Height="20" Background="#8D6E63" CornerRadius="3"/>
+                                        <Border Width="28" Height="20" Background="#5D4037" CornerRadius="3"/>
                                         <StackPanel Grid.Column="1" Margin="8,0">
                                             <TextBlock Text="Latest snapshot" FontWeight="SemiBold"/>
                                             <TextBlock Text="25w34b" Foreground="#CFCFCF" FontSize="12"/>
