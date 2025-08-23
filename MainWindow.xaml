@@ -38,6 +38,7 @@
             </Setter>
         </Style>
 
+        <!-- Updated SidebarButtonStyle with proper handling of background and foreground -->
         <Style x:Key="SidebarButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="#CCCCCC"/>
@@ -46,15 +47,18 @@
             <Setter Property="Margin" Value="0,2"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/> <!-- Remove focus rectangle -->
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
+                        <Border x:Name="buttonBorder" 
+                                Background="{TemplateBinding Background}" 
                                 BorderBrush="{TemplateBinding BorderBrush}" 
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -141,10 +145,11 @@
             
             <!-- Edition title -->
             <TextBlock Grid.Row="0" Text="CASTLEMINER Z" Foreground="White" 
-                       FontWeight="Bold" Margin="20,5,0,0" FontSize="12"/>
+                       FontWeight="Bold" Margin="20,5,0,0" FontSize="12"
+                       x:Name="EditionTitleText"/>
             
             <!-- Tab buttons -->
-            <StackPanel Grid.Row="1" Orientation="Horizontal">
+            <StackPanel Grid.Row="1" Orientation="Horizontal" x:Name="TabsPanel">
                 <Button Content="Play" Style="{StaticResource TabButtonStyle}" Tag="Play" Click="TabButton_Click" 
                         BorderThickness="0,0,0,2" BorderBrush="#4CAF50"/>
                 <Button Content="Installations" Style="{StaticResource TabButtonStyle}" Tag="Installations" Click="TabButton_Click"/>
@@ -161,9 +166,8 @@
                 </Grid.RowDefinitions>
 
                 <!-- Sidebar navigation -->
-                <StackPanel Grid.Row="0" Margin="0,5,0,0">
-                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="CMZ" 
-                            Background="#333333" Foreground="White">
+                <StackPanel Grid.Row="0" Margin="0,5,0,0" x:Name="SidebarPanel">
+                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="CMZ" Name="btnCMZ">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="◆" FontSize="14" Margin="0,0,10,0"/>
                             <StackPanel>
@@ -172,7 +176,7 @@
                         </StackPanel>
                     </Button>
                     
-                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="CMW">
+                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="CMW" Name="btnCMW">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="◆" FontSize="14" Margin="0,0,10,0"/>
                             <StackPanel>
@@ -180,20 +184,18 @@
                             </StackPanel>
                         </StackPanel>
                     </Button>
-
-                    <!-- Other game versions could be added here -->
                 </StackPanel>
 
                 <!-- Bottom sidebar items -->
-                <StackPanel Grid.Row="1" Margin="0,0,0,10">
-                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Changelog">
+                <StackPanel Grid.Row="1" Margin="0,0,0,10" x:Name="BottomSidebarPanel">
+                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Changelog" Name="btnChangelog">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="≡" FontSize="14" Margin="0,0,10,0"/>
                             <TextBlock Text="WHAT'S NEW" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
                     
-                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Settings">
+                    <Button Style="{StaticResource SidebarButtonStyle}" Click="SidebarButton_Click" Tag="Settings" Name="btnSettings">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="⚙" FontSize="14" Margin="0,0,10,0"/>
                             <TextBlock Text="SETTINGS" FontWeight="SemiBold"/>

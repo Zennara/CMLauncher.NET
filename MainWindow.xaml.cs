@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -13,6 +14,7 @@ namespace CMLauncher
         // Define the InstanceComboBox if it's not in XAML
         private ComboBox InstanceComboBox;
         private string currentSidebarSelection = "CMZ"; // Track current sidebar selection
+        private Button currentlySelectedSidebarButton; // Keep track of the currently selected sidebar button
 
         public MainWindow()
         {
@@ -23,21 +25,35 @@ namespace CMLauncher
             
             // Set default content
             NavigateToContent("CMZ");
+            
+            // Select CMZ button by default when UI is loaded
+            Loaded += (s, e) => 
+            {
+                try
+                {
+                    // Use direct reference to the named CMZ button
+                    btnCMZ.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
+                    btnCMZ.Foreground = Brushes.White;
+                    currentlySelectedSidebarButton = btnCMZ;
+                    Debug.WriteLine("Successfully selected CMZ button on startup");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"ERROR during initial button selection: {ex.Message}");
+                }
+            };
         }
 
         private void TabButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is string tag)
             {
-                // Update selected tab styling - Fixed UIElementCollection access
-                if (button.Parent is StackPanel tabPanel)
+                // Update selected tab styling
+                foreach (var child in TabsPanel.Children)
                 {
-                    foreach (var child in tabPanel.Children)
+                    if (child is Button b)
                     {
-                        if (child is Button b)
-                        {
-                            b.BorderThickness = new Thickness(0);
-                        }
+                        b.BorderThickness = new Thickness(0);
                     }
                 }
                 
@@ -63,31 +79,69 @@ namespace CMLauncher
 
         private void SidebarButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is string tag)
+            try
             {
-                // Update selected sidebar button styling - Fixed UIElementCollection access
-                if (button.Parent is StackPanel sidebarPanel)
+                if (sender is Button clickedButton && clickedButton.Tag is string tag)
                 {
-                    foreach (var child in sidebarPanel.Children)
+                    Debug.WriteLine($"Clicked sidebar button: {tag}");
+                    
+                    // Don't do anything if it's already selected
+                    if (clickedButton == currentlySelectedSidebarButton)
                     {
-                        if (child is Button b)
-                        {
-                            b.Background = new SolidColorBrush(Colors.Transparent);
-                            b.Foreground = new SolidColorBrush(Color.FromRgb(204, 204, 204));
-                        }
+                        Debug.WriteLine("Button already selected, no change needed");
+                        return;
                     }
+                    
+                    // Clear ALL sidebar buttons (both in SidebarPanel and BottomSidebarPanel)
+                    ClearAllSidebarButtons();
+                    
+                    // Update the clicked button
+                    clickedButton.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
+                    clickedButton.Foreground = Brushes.White;
+                    currentlySelectedSidebarButton = clickedButton;
+                    
+                    // Store current selection if it's a mod (CMZ or CMW)
+                    if (tag == "CMZ" || tag == "CMW")
+                    {
+                        currentSidebarSelection = tag;
+                        
+                        // Update the title text
+                        if (tag == "CMZ")
+                            EditionTitleText.Text = "CASTLEMINER Z";
+                        else if (tag == "CMW")
+                            EditionTitleText.Text = "CM WARFARE";
+                    }
+                    
+                    NavigateToContent(tag);
                 }
-                
-                button.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
-                button.Foreground = new SolidColorBrush(Colors.White);
-                
-                // Store current selection if it's a mod (CMZ or CMW)
-                if (tag == "CMZ" || tag == "CMW")
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ERROR during sidebar button click: {ex.Message}");
+                MessageBox.Show($"Error: {ex.Message}", "Button Selection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        
+        private void ClearAllSidebarButtons()
+        {
+            // Clear game buttons in the main sidebar panel
+            foreach (var child in SidebarPanel.Children)
+            {
+                if (child is Button button)
                 {
-                    currentSidebarSelection = tag;
+                    button.Background = Brushes.Transparent;
+                    button.Foreground = new SolidColorBrush(Color.FromRgb(204, 204, 204));
                 }
-                
-                NavigateToContent(tag);
+            }
+            
+            // Clear utility buttons in the bottom sidebar panel
+            foreach (var child in BottomSidebarPanel.Children)
+            {
+                if (child is Button button)
+                {
+                    button.Background = Brushes.Transparent;
+                    button.Foreground = new SolidColorBrush(Color.FromRgb(204, 204, 204));
+                }
             }
         }
 
@@ -122,48 +176,24 @@ namespace CMLauncher
         
         private void SelectTabButton(string tag)
         {
-            // Find and visually select the tab button with the given tag
-            foreach (var child in FindVisualChildren<Button>(this))
+            // Find the button with matching tag in the tabs panel
+            foreach (var child in TabsPanel.Children)
             {
-                if (child.Tag?.ToString() == tag && child.Style == FindResource("TabButtonStyle"))
+                if (child is Button button && button.Tag?.ToString() == tag)
                 {
                     // Reset all tab buttons
-                    if (child.Parent is StackPanel tabPanel)
+                    foreach (var tabChild in TabsPanel.Children)
                     {
-                        foreach (var tabChild in tabPanel.Children)
+                        if (tabChild is Button b)
                         {
-                            if (tabChild is Button b)
-                            {
-                                b.BorderThickness = new Thickness(0);
-                            }
+                            b.BorderThickness = new Thickness(0);
                         }
                     }
                     
                     // Select this tab button
-                    child.BorderThickness = new Thickness(0, 0, 0, 2);
-                    child.BorderBrush = new SolidColorBrush(Color.FromRgb(76, 175, 80));
+                    button.BorderThickness = new Thickness(0, 0, 0, 2);
+                    button.BorderBrush = new SolidColorBrush(Color.FromRgb(76, 175, 80));
                     break;
-                }
-            }
-        }
-        
-        // Helper method to find visual children of a specified type
-        private static System.Collections.Generic.IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
-        {
-            if (depObj != null)
-            {
-                for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
-                {
-                    DependencyObject child = VisualTreeHelper.GetChild(depObj, i);
-                    if (child != null && child is T t)
-                    {
-                        yield return t;
-                    }
-
-                    foreach (T childOfChild in FindVisualChildren<T>(child))
-                    {
-                        yield return childOfChild;
-                    }
                 }
             }
         }
