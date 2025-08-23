@@ -15,9 +15,12 @@ namespace CMLauncher
             _gameKey = gameKey;
             Background = new SolidColorBrush(Color.FromRgb(32, 32, 32));
 
-            var root = new StackPanel { Margin = new Thickness(20) };
+            // Root layout uses Grid so the ScrollViewer gets a constrained height and can scroll
+            var root = new Grid { Margin = new Thickness(20) };
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-            // Header
+            // Header with button
             var headerGrid = new Grid();
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -41,13 +44,14 @@ namespace CMLauncher
             newBtn.Click += (s, e) => ShowCreateDialog();
             Grid.SetColumn(newBtn, 1);
             headerGrid.Children.Add(newBtn);
-
+            Grid.SetRow(headerGrid, 0);
             root.Children.Add(headerGrid);
 
-            // Scrollable list
+            // Scrollable list area
             var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
             _listHost = new StackPanel();
             scroll.Content = _listHost;
+            Grid.SetRow(scroll, 1);
             root.Children.Add(scroll);
 
             Content = root;
