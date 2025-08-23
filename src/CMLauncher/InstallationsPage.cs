@@ -310,9 +310,9 @@ namespace CMLauncher
             menuToggle.Content = new TextBlock { Text = "\uE712", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
             var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
             var menuStack = new StackPanel();
-            menuStack.Children.Add(CreateMenuItem("Edit", () => { /* TODO edit */ }));
-            menuStack.Children.Add(CreateMenuItem("Duplicate", () => { var dup = InstallationService.DuplicateInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
-            menuStack.Children.Add(CreateMenuItem("Delete", () => { InstallationService.DeleteInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
+            menuStack.Children.Add(CreateMenuItem("Edit", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; }));
+            menuStack.Children.Add(CreateMenuItem("Duplicate", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; var dup = InstallationService.DuplicateInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
+            menuStack.Children.Add(CreateMenuItem("Delete", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; InstallationService.DeleteInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
             menuPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)), BorderThickness = new Thickness(1), Child = menuStack };
             menuToggle.Checked += (s, e) => menuPopup.IsOpen = true;
             menuToggle.Unchecked += (s, e) => menuPopup.IsOpen = false;
