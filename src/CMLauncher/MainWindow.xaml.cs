@@ -200,5 +200,17 @@ namespace CMLauncher
                 InstallToggle.IsChecked = false;
             }
         }
+
+        private void Logout_Click(object sender, RoutedEventArgs e)
+        {
+            // Close the popup
+            if (AccountToggle != null)
+            {
+                AccountToggle.IsChecked = false;
+            }
+            
+            // TODO: Insert real sign-out logic here
+            MessageBox.Show("Logged out.", "Account", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 }
