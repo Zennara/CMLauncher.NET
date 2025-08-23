@@ -163,6 +163,11 @@ namespace CMLauncher
                 InstallationService.CreateInstallation(_gameKey, name, version, selectedIcon);
                 dlg.Close();
                 RefreshList();
+                // Also refresh the bottom-left selector immediately
+                if (Application.Current?.MainWindow is MainWindow mw)
+                {
+                    mw.RefreshInstallationsMenu();
+                }
             };
             buttons.Children.Add(cancel);
             buttons.Children.Add(create);
