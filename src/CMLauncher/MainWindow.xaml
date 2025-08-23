@@ -396,9 +396,7 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <Border Width="28" Height="20" Background="#2A2A2A" CornerRadius="3" VerticalAlignment="Center">
-                                <Image x:Name="SelectedInstallIcon" Stretch="Uniform" Margin="2"/>
-                            </Border>
+                            <Image x:Name="SelectedInstallIcon" Width="24" Height="24" Stretch="Uniform" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
                                 <TextBlock x:Name="SelectedInstallName" Text="Uknown" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
                                 <TextBlock x:Name="SelectedInstallVersion" Text="Unknown" Foreground="#CCCCCC" FontSize="11"/>
@@ -417,54 +415,7 @@
                            PopupAnimation="Fade"
                            IsOpen="{Binding IsChecked, ElementName=InstallToggle, Mode=TwoWay}">
                         <Border Background="{StaticResource AppBackgroundBrush}" BorderThickness="0" CornerRadius="4" Padding="0">
-                            <StackPanel x:Name="InstallItemsPanel" MinWidth="{Binding ElementName=InstallToggle, Path=ActualWidth}">
-                                <!-- Current/Forge selection -->
-                                <Button Style="{StaticResource InstallMenuItemStyle}" Click="SelectInstallation_Click" Tag="forge|1.21.5-forge-55.0.23">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Border Width="28" Height="20" Background="{StaticResource AccentBrush}" CornerRadius="3"/>
-                                        <StackPanel Grid.Column="1" Margin="8,0">
-                                            <TextBlock Text="forge" FontWeight="SemiBold"/>
-                                            <TextBlock Text="1.21.5-forge-55.0.23" Foreground="#CFCFCF" FontSize="12"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Button>
-
-                                <Separator Margin="0,6" Background="#303030" Height="1"/>
-
-                                <!-- Latest release -->
-                                <Button Style="{StaticResource InstallMenuItemStyle}" Click="SelectInstallation_Click" Tag="Latest release|1.21.8">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Border Width="28" Height="20" Background="{StaticResource AccentBrush}" CornerRadius="3"/>
-                                        <StackPanel Grid.Column="1" Margin="8,0">
-                                            <TextBlock Text="Latest release" FontWeight="SemiBold"/>
-                                            <TextBlock Text="1.21.8" Foreground="#CFCFCF" FontSize="12"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Button>
-
-                                <!-- Latest snapshot -->
-                                <Button Style="{StaticResource InstallMenuItemStyle}" Click="SelectInstallation_Click" Tag="Latest snapshot|25w34b">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Border Width="28" Height="20" Background="#5D4037" CornerRadius="3"/>
-                                        <StackPanel Grid.Column="1" Margin="8,0">
-                                            <TextBlock Text="Latest snapshot" FontWeight="SemiBold"/>
-                                            <TextBlock Text="25w34b" Foreground="#CFCFCF" FontSize="12"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Button>
-                            </StackPanel>
+                            <StackPanel x:Name="InstallItemsPanel" MinWidth="{Binding ElementName=InstallToggle, Path=ActualWidth}" />
                         </Border>
                     </Popup>
                 </Grid>

@@ -15,6 +15,8 @@ namespace CMLauncher
     /// </summary>
     public partial class MainWindow : Window
     {
+        private const string SteamIconName = "Lantern.png"; // expected filename in assets/blocks
+
         private ComboBox InstanceComboBox;
         private string currentSidebarSelection = "CMZ"; // Track current sidebar selection
         private Button currentlySelectedSidebarButton; // Keep track of the currently selected sidebar button
@@ -52,8 +54,8 @@ namespace CMLauncher
         {
             InstallItemsPanel.Children.Clear();
 
-            // Always include default Steam option first (no icon)
-            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam", "Latest Version", null));
+            // Default Steam entry uses the Lantern icon
+            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam", "Latest Version", SteamIconName));
 
             var installs = InstallationService.LoadInstallations(gameKey);
             foreach (var inst in installs)
@@ -75,11 +77,12 @@ namespace CMLauncher
                 if (firstButton.Tag is string tag)
                 {
                     var parts = tag.Split('|');
-                    if (parts.Length == 2)
+                    if (parts.Length >= 2)
                     {
                         SelectedInstallName.Text = parts[0];
                         SelectedInstallVersion.Text = parts[1];
-                        UpdateSelectedIcon(null);
+                        var iconName = parts.Length >= 3 ? parts[2] : SteamIconName;
+                        UpdateSelectedIcon(iconName);
                     }
                 }
             }
@@ -98,24 +101,13 @@ namespace CMLauncher
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            FrameworkElement left;
+            var img = new Image { Width = 24, Height = 24, Stretch = Stretch.Uniform, Margin = new Thickness(0) };
             if (!string.IsNullOrWhiteSpace(iconName))
             {
-                var img = new Image { Width = 28, Height = 20, Stretch = Stretch.Uniform, Margin = new Thickness(0) };
-                if (!TryLoadBlockIcon(img, iconName))
-                {
-                    left = new Border { Width = 28, Height = 20, Background = (Brush)FindResource("AccentBrush"), CornerRadius = new CornerRadius(3) };
-                }
-                else
-                {
-                    left = img;
-                }
+                TryLoadBlockIcon(img, iconName);
             }
-            else
-            {
-                left = new Border { Width = 28, Height = 20, Background = (Brush)FindResource("AccentBrush"), CornerRadius = new CornerRadius(3) };
-            }
-            grid.Children.Add(left);
+            Grid.SetColumn(img, 0);
+            grid.Children.Add(img);
 
             var textStack = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
             Grid.SetColumn(textStack, 1);

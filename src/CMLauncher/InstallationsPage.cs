@@ -222,9 +222,9 @@ namespace CMLauncher
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            // Icon area
-            var iconHost = new Border { Width = 32, Height = 24, Background = new SolidColorBrush(Color.FromRgb(42, 42, 42)), CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 10, 0) };
-            var img = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(2) };
+            // Larger icon area
+            var iconHost = new Border { Width = 48, Height = 48, Background = Brushes.Transparent, CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+            var img = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(0) };
             if (!string.IsNullOrWhiteSpace(iconName))
             {
                 try
