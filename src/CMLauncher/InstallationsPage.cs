@@ -48,7 +48,11 @@ namespace CMLauncher
             root.Children.Add(headerGrid);
 
             // Scrollable list area
-            var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            var scroll = new ScrollViewer
+            {
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Background = new SolidColorBrush(Color.FromRgb(26, 26, 26))
+            };
             _listHost = new StackPanel();
             scroll.Content = _listHost;
             Grid.SetRow(scroll, 1);

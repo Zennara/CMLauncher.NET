@@ -4,6 +4,67 @@
              xmlns:local="clr-namespace:CMLauncher"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <!-- App-level accent brushes (match MainWindow) -->
+        <SolidColorBrush x:Key="AccentBrush" Color="#B71C1C"/>
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#D32F2F"/>
+        <SolidColorBrush x:Key="AccentPressedBrush" Color="#8E1515"/>
+
+        <!-- Dark theme brushes for scroll elements -->
+        <SolidColorBrush x:Key="ScrollbarTrackBrush" Color="#121212"/>
+
+        <!-- Borderless, rounded Thumb style (used by ScrollBars) -->
+        <Style TargetType="Thumb">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{TemplateBinding Background}" BorderThickness="0" CornerRadius="6"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Global ScrollBar style to match app theme and ensure visibility -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="{StaticResource ScrollbarTrackBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <!-- Default thickness for vertical; horizontal adjusted via trigger below -->
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="True">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}" Background="{TemplateBinding Background}" BorderThickness="0" FocusVisualStyle="{x:Null}"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb x:Name="Thumb" Background="{TemplateBinding Foreground}"/>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}" Background="{TemplateBinding Background}" BorderThickness="0" FocusVisualStyle="{x:Null}"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Orientation" Value="Horizontal">
+                                <Setter Property="Height" Value="12"/>
+                                <Setter Property="Width" Value="Auto"/>
+                            </Trigger>
+                            <Trigger SourceName="Thumb" Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Thumb" Property="Background" Value="{StaticResource AccentHoverBrush}"/>
+                            </Trigger>
+                            <Trigger SourceName="Thumb" Property="IsDragging" Value="True">
+                                <Setter TargetName="Thumb" Property="Background" Value="{StaticResource AccentPressedBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Application.Resources>
 </Application>
