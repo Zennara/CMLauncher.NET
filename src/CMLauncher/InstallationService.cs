@@ -170,6 +170,72 @@ namespace CMLauncher
 
             return info;
         }
+
+        public static void DeleteInstallation(InstallationInfo info)
+        {
+            try
+            {
+                if (Directory.Exists(info.RootPath))
+                {
+                    Directory.Delete(info.RootPath, true);
+                }
+            }
+            catch
+            {
+                // ignore IO errors for now
+            }
+        }
+
+        public static InstallationInfo DuplicateInstallation(InstallationInfo info)
+        {
+            var destRoot = GetInstallationsPath(info.GameKey);
+            Directory.CreateDirectory(destRoot);
+
+            string baseName = info.Name + " - Copy";
+            string newName = baseName;
+            string newPath = Path.Combine(destRoot, newName);
+            int i = 2;
+            while (Directory.Exists(newPath))
+            {
+                newName = $"{baseName} ({i++})";
+                newPath = Path.Combine(destRoot, newName);
+            }
+
+            DirectoryCopy(info.RootPath, newPath, true);
+
+            return new InstallationInfo
+            {
+                GameKey = info.GameKey,
+                Name = newName,
+                Version = info.Version,
+                Timestamp = null,
+                RootPath = newPath,
+                IconName = info.IconName
+            };
+        }
+
+        private static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs)
+        {
+            var dir = new DirectoryInfo(sourceDirName);
+            if (!dir.Exists) return;
+
+            Directory.CreateDirectory(destDirName);
+
+            foreach (var file in dir.GetFiles())
+            {
+                string temppath = Path.Combine(destDirName, file.Name);
+                file.CopyTo(temppath, true);
+            }
+
+            if (copySubDirs)
+            {
+                foreach (var subdir in dir.GetDirectories())
+                {
+                    string temppath = Path.Combine(destDirName, subdir.Name);
+                    DirectoryCopy(subdir.FullName, temppath, true);
+                }
+            }
+        }
     }
 
     public class InstallationInfo

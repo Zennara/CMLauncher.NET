@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -203,40 +204,38 @@ namespace CMLauncher
             _listHost.Children.Clear();
 
             // Steam pseudo-installation first, with Lantern icon
-            AddInstallationItem(_listHost, SteamIconName, "Steam", "Latest Version", true);
+            AddInstallationItem(_listHost, new InstallationInfo { GameKey = _gameKey, Name = "Steam", Version = "Latest Version", IconName = SteamIconName, RootPath = "" }, true);
 
             var installs = InstallationService.LoadInstallations(_gameKey);
             foreach (var inst in installs)
             {
-                AddInstallationItem(_listHost, inst.IconName, inst.Name, inst.Version, false);
+                AddInstallationItem(_listHost, inst, false);
             }
         }
         
-        private void AddInstallationItem(StackPanel panel, string? iconName, string name, string version, bool isSelected)
+        private void AddInstallationItem(StackPanel panel, InstallationInfo info, bool isSelected)
         {
             var border = new Border
             {
-                Background = isSelected ? 
-                    new SolidColorBrush(Color.FromRgb(60, 60, 60)) : 
-                    new SolidColorBrush(Color.FromRgb(45, 45, 45)),
+                Background = isSelected ? new SolidColorBrush(Color.FromRgb(60, 60, 60)) : new SolidColorBrush(Color.FromRgb(45, 45, 45)),
                 Margin = new Thickness(0, 0, 0, 10),
                 Padding = new Thickness(15),
                 CornerRadius = new CornerRadius(3)
             };
-            
+
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            // Larger icon area
-            var iconHost = new Border { Width = 48, Height = 48, Background = Brushes.Transparent, CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
-            var img = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(0) };
-            if (!string.IsNullOrWhiteSpace(iconName))
+            // Icon
+            var iconHost = new Border { Width = 48, Height = 48, Background = Brushes.Transparent, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+            var img = new Image { Stretch = Stretch.Uniform };
+            if (!string.IsNullOrWhiteSpace(info.IconName))
             {
                 try
                 {
-                    var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks", iconName);
+                    var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks", info.IconName);
                     if (System.IO.File.Exists(path))
                     {
                         var bmp = new BitmapImage();
@@ -253,60 +252,83 @@ namespace CMLauncher
             iconHost.Child = img;
             Grid.SetColumn(iconHost, 0);
             grid.Children.Add(iconHost);
-            
+
+            // Info
             var infoPanel = new StackPanel();
-            
-            infoPanel.Children.Add(new TextBlock
-            {
-                Text = name,
-                FontSize = 16,
-                Foreground = Brushes.White
-            });
-            
-            infoPanel.Children.Add(new TextBlock
-            {
-                Text = $"Version: {version}",
-                FontSize = 12,
-                Foreground = Brushes.LightGray,
-                Margin = new Thickness(0, 5, 0, 0)
-            });
-            
+            infoPanel.Children.Add(new TextBlock { Text = info.Name, FontSize = 16, Foreground = Brushes.White });
+            infoPanel.Children.Add(new TextBlock { Text = $"Version: {info.Version}", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 5, 0, 0) });
             Grid.SetColumn(infoPanel, 1);
             grid.Children.Add(infoPanel);
-            
-            var buttonsPanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            
-            var playButton = new Button
+
+            // Actions (hidden by default; revealed on hover via triggers on parent border)
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
+
+            // Play button (red)
+            var playBtn = new Button
             {
                 Content = "Play",
-                Padding = new Thickness(15, 5, 15, 5),
+                Padding = new Thickness(15, 6, 15, 6),
                 Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"),
                 Foreground = Brushes.White,
                 BorderThickness = new Thickness(0),
-                Margin = new Thickness(0, 0, 10, 0)
+                Margin = new Thickness(0, 0, 8, 0)
             };
-            
-            var editButton = new Button
+            playBtn.Click += (s, e) => MessageBox.Show($"Launching {info.Name}...");
+            actions.Children.Add(playBtn);
+
+            // Open Folder button (icon-ish text) ?
+            var folderBtn = new Button
             {
-                Content = "...",
-                Padding = new Thickness(10, 5, 10, 5),
+                Content = "?",
+                Padding = new Thickness(10, 6, 10, 6),
                 Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
                 Foreground = Brushes.White,
-                BorderThickness = new Thickness(0)
+                BorderThickness = new Thickness(0),
+                Margin = new Thickness(0, 0, 8, 0)
             };
-            
-            buttonsPanel.Children.Add(playButton);
-            buttonsPanel.Children.Add(editButton);
-            
-            Grid.SetColumn(buttonsPanel, 2);
-            grid.Children.Add(buttonsPanel);
-            
+            folderBtn.Click += (s, e) =>
+            {
+                try
+                {
+                    var path = string.IsNullOrEmpty(info.RootPath) ? InstallationService.GetInstallationsPath(info.GameKey) : info.RootPath;
+                    if (System.IO.Directory.Exists(path))
+                        Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+                }
+                catch { }
+            };
+            actions.Children.Add(folderBtn);
+
+            // Overflow menu (three dots)
+            var menuToggle = new ToggleButton { Content = "?", Padding = new Thickness(10, 6, 10, 6), Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)), Foreground = Brushes.White, BorderThickness = new Thickness(0) };
+            var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
+            var menuStack = new StackPanel();
+            menuStack.Children.Add(CreateMenuItem("Edit", () => { /* TODO edit */ }));
+            menuStack.Children.Add(CreateMenuItem("Duplicate", () => { var dup = InstallationService.DuplicateInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
+            menuStack.Children.Add(CreateMenuItem("Delete", () => { InstallationService.DeleteInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
+            menuPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)), BorderThickness = new Thickness(1), Child = menuStack };
+            menuToggle.Checked += (s, e) => menuPopup.IsOpen = true;
+            menuToggle.Unchecked += (s, e) => menuPopup.IsOpen = false;
+            menuPopup.Closed += (s, e) => menuToggle.IsChecked = false;
+            actions.Children.Add(menuToggle);
+
+            Grid.SetColumn(actions, 2);
+            grid.Children.Add(actions);
+
+            // Hover behavior: show actions when hovering the card
+            border.MouseEnter += (s, e) => actions.Visibility = Visibility.Visible;
+            border.MouseLeave += (s, e) => { if (menuPopup.IsOpen == false) actions.Visibility = Visibility.Collapsed; };
+
             border.Child = grid;
             panel.Children.Add(border);
+        }
+
+        private UIElement CreateMenuItem(string text, System.Action onClick)
+        {
+            var btn = new Button { Content = text, Padding = new Thickness(12, 8, 12, 8), Background = Brushes.Transparent, Foreground = Brushes.White, BorderThickness = new Thickness(0), HorizontalContentAlignment = HorizontalAlignment.Left };
+            btn.Click += (s, e) => onClick();
+            btn.MouseEnter += (s, e) => btn.Background = new SolidColorBrush(Color.FromRgb(70, 70, 70));
+            btn.MouseLeave += (s, e) => btn.Background = Brushes.Transparent;
+            return btn;
         }
     }
 }
