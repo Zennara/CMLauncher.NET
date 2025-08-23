@@ -52,7 +52,6 @@ namespace CMLauncher
                     case "Installations":
                         MainContentFrame.Navigate(new InstallationsPage());
                         break;
-                    case "Skins":
                     case "PatchNotes":
                         // Would navigate to patch notes page
                         break;
