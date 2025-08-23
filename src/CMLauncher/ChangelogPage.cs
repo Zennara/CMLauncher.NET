@@ -8,69 +8,59 @@ namespace CMLauncher
     {
         public ChangelogPage()
         {
-            var scrollViewer = new ScrollViewer();
-            var panel = new StackPanel
-            {
-                Background = new SolidColorBrush(Color.FromRgb(32, 32, 32)),
-                Margin = new Thickness(20) // Fixed - using single parameter constructor
-            };
+            Background = new SolidColorBrush(Color.FromRgb(32, 32, 32));
+
+            var root = new Grid { Margin = new Thickness(20) };
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             
-            panel.Children.Add(new TextBlock
+            root.Children.Add(new TextBlock
             {
                 Text = "What's New",
                 FontSize = 24,
-                Margin = new Thickness(0, 0, 0, 20), // Fixed - using all four parameters
+                Margin = new Thickness(0, 0, 0, 12),
                 Foreground = Brushes.White
             });
-            
-            // Add change log entries
-            AddChangelogEntry(panel, "v1.0.0", "2023-07-15", new[]
+
+            var list = new StackPanel();
+            Grid.SetRow(list, 1);
+
+            AddEntry(list, "v1.0.0", new[]
             {
                 "Initial release of CM Launcher",
                 "Added support for CMZ and CMW",
                 "Basic settings and configuration"
             });
-            
-            AddChangelogEntry(panel, "v0.9.5-beta", "2023-07-01", new[]
+
+            AddEntry(list, "v0.9.5-beta", new[]
             {
                 "Beta testing version",
                 "Fixed multiple bugs in the launcher interface",
                 "Improved mod loading performance"
             });
-            
-            scrollViewer.Content = panel;
-            Content = scrollViewer;
+
+            root.Children.Add(list);
+            Content = root;
         }
-        
-        private void AddChangelogEntry(StackPanel panel, string version, string date, string[] changes)
+
+        private void AddEntry(StackPanel list, string version, string[] changes)
         {
-            panel.Children.Add(new TextBlock
+            list.Children.Add(new TextBlock
             {
-                Text = $"{version} ({date})",
+                Text = version,
                 FontSize = 18,
                 FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 10, 0, 5), // Fixed - using all four parameters
+                Margin = new Thickness(0, 10, 0, 6),
                 Foreground = Brushes.White
             });
-            
-            var changesList = new StackPanel
-            {
-                Margin = new Thickness(10, 0, 0, 15) // Fixed - using all four parameters
-            };
-            
+
             foreach (var change in changes)
             {
-                changesList.Children.Add(new TextBlock
-                {
-                    Text = $"• {change}",
-                    FontSize = 14,
-                    Margin = new Thickness(0, 3, 0, 0), // Fixed - using all four parameters
-                    Foreground = Brushes.LightGray,
-                    TextWrapping = TextWrapping.Wrap
-                });
+                var p = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 2, 0, 0) };
+                p.Children.Add(new TextBlock { Text = "•", Foreground = Brushes.LightGray, Margin = new Thickness(0, 0, 6, 0) });
+                p.Children.Add(new TextBlock { Text = change, Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap, Width = 600 });
+                list.Children.Add(p);
             }
-            
-            panel.Children.Add(changesList);
         }
     }
 }
