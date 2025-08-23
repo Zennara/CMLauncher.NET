@@ -9,6 +9,8 @@ namespace CMLauncher
 {
     public class InstallationsPage : Page
     {
+        private const string SteamIconName = "Lantern.png"; // icon file in assets/blocks
+
         private StackPanel _listHost = null!;
         private readonly string _gameKey;
 
@@ -195,8 +197,8 @@ namespace CMLauncher
         {
             _listHost.Children.Clear();
 
-            // Always include default Steam option first
-            AddInstallationItem(_listHost, null, "Steam", "Latest Version", true);
+            // Steam pseudo-installation first, with Lantern icon
+            AddInstallationItem(_listHost, SteamIconName, "Steam", "Latest Version", true);
 
             var installs = InstallationService.LoadInstallations(_gameKey);
             foreach (var inst in installs)
