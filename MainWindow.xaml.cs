@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -14,6 +15,7 @@ namespace CMLauncher
         private ComboBox InstanceComboBox;
         private string currentSidebarSelection = "CMZ"; // Track current sidebar selection
         private Button currentlySelectedSidebarButton; // Keep track of the currently selected sidebar button
+        private Button _selectedInstallButton;
 
         private readonly SolidColorBrush DefaultForegroundBrush = new SolidColorBrush(Color.FromRgb(204, 204, 204));
 
@@ -176,14 +178,24 @@ namespace CMLauncher
         {
             if (sender is Button btn && btn.Tag is string tag)
             {
-                // Tag format: "name|version"
+                // Clear previous selection visual
+                if (_selectedInstallButton != null)
+                {
+                    SelectionProperties.SetIsSelected(_selectedInstallButton, false);
+                }
+
+                // Mark new selection
+                _selectedInstallButton = btn;
+                SelectionProperties.SetIsSelected(_selectedInstallButton, true);
+
+                // Update toggle texts from Tag "name|version"
                 var parts = tag.Split('|');
                 if (parts.Length == 2)
                 {
                     SelectedInstallName.Text = parts[0];
                     SelectedInstallVersion.Text = parts[1];
                 }
-                
+
                 // Close popup
                 InstallToggle.IsChecked = false;
             }
