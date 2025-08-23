@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace CMLauncher
 {
-    public static class InstallationService
+    public static partial class InstallationService
     {
         public const string RootFolderName = ".castleminer";
         public const string CMZKey = "CMZ";
@@ -212,6 +212,93 @@ namespace CMLauncher
                 RootPath = newPath,
                 IconName = info.IconName
             };
+        }
+
+        public static InstallationInfo RenameInstallation(InstallationInfo info, string newName)
+        {
+            var root = GetInstallationsPath(info.GameKey);
+            Directory.CreateDirectory(root);
+            string finalName = newName;
+            string destPath = Path.Combine(root, finalName);
+            int i = 1;
+            while (Directory.Exists(destPath))
+            {
+                finalName = $"{newName} ({i++})";
+                destPath = Path.Combine(root, finalName);
+            }
+
+            if (!string.Equals(info.RootPath, destPath, StringComparison.OrdinalIgnoreCase))
+            {
+                Directory.Move(info.RootPath, destPath);
+            }
+
+            return new InstallationInfo
+            {
+                GameKey = info.GameKey,
+                Name = finalName,
+                Version = info.Version,
+                Timestamp = info.Timestamp,
+                RootPath = destPath,
+                IconName = info.IconName
+            };
+        }
+
+        public static void UpdateInstallationIcon(InstallationInfo info, string? iconName)
+        {
+            var path = Path.Combine(info.RootPath, "installation-info.json");
+            var doc = ReadInfoFile(path) ?? new InstallationInfoFile();
+            doc.icon = iconName;
+            WriteInfoFile(path, doc);
+        }
+
+        public static void UpdateInstallationVersion(InstallationInfo info, string version)
+        {
+            // Clear Game folder
+            var gameDir = Path.Combine(info.RootPath, "Game");
+            try
+            {
+                if (Directory.Exists(gameDir))
+                {
+                    Directory.Delete(gameDir, true);
+                }
+                Directory.CreateDirectory(gameDir);
+            }
+            catch { }
+
+            // Placeholder download logic
+            DownloadGameVersion(info, version);
+
+            // Update info file
+            var path = Path.Combine(info.RootPath, "installation-info.json");
+            var doc = ReadInfoFile(path) ?? new InstallationInfoFile();
+            doc.version = version;
+            WriteInfoFile(path, doc);
+        }
+
+        public static void DownloadGameVersion(InstallationInfo info, string version)
+        {
+            // Placeholder: intentionally do nothing for now
+        }
+
+        private static InstallationInfoFile? ReadInfoFile(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return null;
+                var json = File.ReadAllText(path);
+                return JsonSerializer.Deserialize<InstallationInfoFile>(json);
+            }
+            catch { return null; }
+        }
+
+        private static void WriteInfoFile(string path, InstallationInfoFile doc)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(path, json);
+            }
+            catch { }
         }
 
         private static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs)

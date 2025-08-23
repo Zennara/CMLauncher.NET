@@ -260,7 +260,7 @@ namespace CMLauncher
             Grid.SetColumn(infoPanel, 1);
             grid.Children.Add(infoPanel);
 
-            // Actions
+            // Actions (hover)
             var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
 
             var playBtn = new Button
@@ -275,7 +275,7 @@ namespace CMLauncher
             playBtn.Click += (s, e) => MessageBox.Show($"Launching {info.Name}...");
             actions.Children.Add(playBtn);
 
-            // Folder icon (Segoe MDL2 Assets: E8B7)
+            // Folder glyph
             var folderBtn = new Button
             {
                 Padding = new Thickness(10, 6, 10, 6),
@@ -298,7 +298,7 @@ namespace CMLauncher
             };
             actions.Children.Add(folderBtn);
 
-            // More (three dots) icon (Segoe MDL2 Assets: E712)
+            // More menu
             var menuToggle = new ToggleButton
             {
                 Padding = new Thickness(10, 6, 10, 6),
@@ -310,7 +310,7 @@ namespace CMLauncher
             menuToggle.Content = new TextBlock { Text = "\uE712", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
             var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
             var menuStack = new StackPanel();
-            menuStack.Children.Add(CreateMenuItem("Edit", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; }));
+            menuStack.Children.Add(CreateMenuItem("Edit", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; ShowEditDialog(info); }));
             menuStack.Children.Add(CreateMenuItem("Duplicate", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; var dup = InstallationService.DuplicateInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
             menuStack.Children.Add(CreateMenuItem("Delete", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; InstallationService.DeleteInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
             menuPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)), BorderThickness = new Thickness(1), Child = menuStack };
@@ -329,9 +329,137 @@ namespace CMLauncher
             panel.Children.Add(border);
         }
 
+        private void ShowEditDialog(InstallationInfo info)
+        {
+            var dlg = new Window
+            {
+                Title = "Edit installation",
+                Owner = Application.Current.MainWindow,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                SizeToContent = SizeToContent.WidthAndHeight,
+                Background = new SolidColorBrush(Color.FromRgb(27, 27, 27)),
+                Foreground = Brushes.White,
+                ResizeMode = ResizeMode.NoResize
+            };
+
+            var panel = new StackPanel { Margin = new Thickness(20) };
+
+            // Icon picker identical to create
+            var iconArea = new Grid { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 12) };
+            iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var currentIcon = new Image { Width = 56, Height = 56, Stretch = Stretch.Uniform };
+            string? selectedIcon = info.IconName;
+            SetIconImage(currentIcon, selectedIcon);
+            Grid.SetColumn(currentIcon, 0);
+            iconArea.Children.Add(currentIcon);
+
+            var caretToggle = new ToggleButton
+            {
+                Margin = new Thickness(8, 0, 0, 0),
+                Padding = new Thickness(6, 0, 6, 0),
+                Background = Brushes.Transparent,
+                Foreground = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(64, 64, 64)),
+                BorderThickness = new Thickness(1),
+                VerticalAlignment = VerticalAlignment.Center,
+                FocusVisualStyle = null,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                Content = "\uE70D"
+            };
+            Grid.SetColumn(caretToggle, 1);
+            iconArea.Children.Add(caretToggle);
+
+            var iconPopup = new Popup { PlacementTarget = caretToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
+            var icons = InstallationService.LoadAvailableIcons();
+            var wrap = new WrapPanel { Margin = new Thickness(8) };
+            foreach (var ic in icons)
+            {
+                var im = new Image { Width = 40, Height = 40, Stretch = Stretch.Uniform, Margin = new Thickness(4) };
+                SetIconImage(im, ic);
+                var b = new Button { Content = im, Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = Brushes.Transparent };
+                var chosen = ic; // capture
+                b.Click += (_, __) => { selectedIcon = chosen; SetIconImage(currentIcon, selectedIcon); iconPopup.IsOpen = false; caretToggle.IsChecked = false; };
+                wrap.Children.Add(b);
+            }
+            iconPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), BorderThickness = new Thickness(1), Child = new ScrollViewer { Content = wrap, MaxHeight = 260 } };
+            caretToggle.Checked += (s, e) => iconPopup.IsOpen = true;
+            caretToggle.Unchecked += (s, e) => iconPopup.IsOpen = false;
+            iconPopup.Closed += (s, e) => caretToggle.IsChecked = false;
+
+            panel.Children.Add(iconArea);
+
+            // Name
+            panel.Children.Add(new TextBlock { Text = "Name", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
+            var nameBox = new TextBox { Width = 360, Text = info.Name };
+            panel.Children.Add(nameBox);
+
+            // Version dropdown from versions folder
+            panel.Children.Add(new TextBlock { Text = "Version", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 6) });
+            var versionCombo = new ComboBox { Width = 360 };
+            versionCombo.Items.Add("Steam Version");
+            foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
+            {
+                versionCombo.Items.Add(v);
+            }
+            // Select current version if present
+            int idx = -1;
+            for (int i = 0; i < versionCombo.Items.Count; i++)
+            {
+                if (string.Equals(versionCombo.Items[i]?.ToString(), info.Version, System.StringComparison.OrdinalIgnoreCase)) { idx = i; break; }
+            }
+            versionCombo.SelectedIndex = idx >= 0 ? idx : 0;
+            panel.Children.Add(versionCombo);
+
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
+            var cancel = new Button { Content = "Cancel", Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 6, 14, 6) };
+            cancel.Click += (s, e) => dlg.Close();
+            var save = new Button { Content = "Save", Padding = new Thickness(14, 6, 14, 6), Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"), Foreground = Brushes.White, BorderThickness = new Thickness(0) };
+            save.Click += (s, e) =>
+            {
+                var newName = string.IsNullOrWhiteSpace(nameBox.Text) ? info.Name : nameBox.Text.Trim();
+                var newVersion = versionCombo.SelectedItem?.ToString() ?? info.Version;
+
+                var updated = info;
+                if (!string.Equals(newName, info.Name, System.StringComparison.Ordinal))
+                {
+                    updated = InstallationService.RenameInstallation(updated, newName);
+                }
+                if (!string.Equals(selectedIcon, updated.IconName, System.StringComparison.Ordinal))
+                {
+                    InstallationService.UpdateInstallationIcon(updated, selectedIcon);
+                    updated.IconName = selectedIcon;
+                }
+                if (!string.Equals(newVersion, updated.Version, System.StringComparison.Ordinal))
+                {
+                    InstallationService.UpdateInstallationVersion(updated, newVersion);
+                    updated.Version = newVersion;
+                }
+
+                dlg.Close();
+                RefreshList();
+                if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu();
+            };
+            buttons.Children.Add(cancel);
+            buttons.Children.Add(save);
+            panel.Children.Add(buttons);
+
+            dlg.Content = panel;
+            dlg.ShowDialog();
+        }
+
         private UIElement CreateMenuItem(string text, System.Action onClick)
         {
-            var btn = new Button { Content = text, Padding = new Thickness(12, 8, 12, 8), Background = Brushes.Transparent, Foreground = Brushes.White, BorderThickness = new Thickness(0), HorizontalContentAlignment = HorizontalAlignment.Left };
+            var btn = new Button
+            {
+                Content = text,
+                Padding = new Thickness(12, 8, 12, 8),
+                Background = Brushes.Transparent,
+                Foreground = Brushes.White,
+                BorderThickness = new Thickness(0),
+                HorizontalContentAlignment = HorizontalAlignment.Left
+            };
             btn.Click += (s, e) => onClick();
             btn.MouseEnter += (s, e) => btn.Background = new SolidColorBrush(Color.FromRgb(70, 70, 70));
             btn.MouseLeave += (s, e) => btn.Background = Brushes.Transparent;
