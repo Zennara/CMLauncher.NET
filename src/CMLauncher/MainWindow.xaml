@@ -397,7 +397,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <Border Width="28" Height="20" Background="#2A2A2A" CornerRadius="3" VerticalAlignment="Center">
-                                <TextBlock Text="⚒" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Image x:Name="SelectedInstallIcon" Stretch="Uniform" Margin="2"/>
                             </Border>
                             <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
                                 <TextBlock x:Name="SelectedInstallName" Text="Uknown" Foreground="White" FontWeight="SemiBold" FontSize="12"/>

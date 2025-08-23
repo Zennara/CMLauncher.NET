@@ -52,13 +52,13 @@ namespace CMLauncher
         {
             InstallItemsPanel.Children.Clear();
 
-            // Always include default Steam option first
-            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam", "Latest Version"));
+            // Always include default Steam option first (no icon)
+            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam", "Latest Version", null));
 
             var installs = InstallationService.LoadInstallations(gameKey);
             foreach (var inst in installs)
             {
-                InstallItemsPanel.Children.Add(CreateInstallMenuButton(inst.Name, inst.Version));
+                InstallItemsPanel.Children.Add(CreateInstallMenuButton(inst.Name, inst.Version, inst.IconName));
             }
 
             // Select the first item by default (Steam)
@@ -79,17 +79,18 @@ namespace CMLauncher
                     {
                         SelectedInstallName.Text = parts[0];
                         SelectedInstallVersion.Text = parts[1];
+                        UpdateSelectedIcon(null);
                     }
                 }
             }
         }
 
-        private Button CreateInstallMenuButton(string name, string version)
+        private Button CreateInstallMenuButton(string name, string version, string? iconName)
         {
             var button = new Button
             {
                 Style = (Style)FindResource("InstallMenuItemStyle"),
-                Tag = $"{name}|{version}",
+                Tag = $"{name}|{version}|{iconName}",
                 HorizontalContentAlignment = HorizontalAlignment.Stretch
             };
 
@@ -97,14 +98,24 @@ namespace CMLauncher
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-            var colorBlock = new Border
+            FrameworkElement left;
+            if (!string.IsNullOrWhiteSpace(iconName))
             {
-                Width = 28,
-                Height = 20,
-                CornerRadius = new CornerRadius(3),
-                Background = (Brush)FindResource("AccentBrush")
-            };
-            grid.Children.Add(colorBlock);
+                var img = new Image { Width = 28, Height = 20, Stretch = Stretch.Uniform, Margin = new Thickness(0) };
+                if (!TryLoadBlockIcon(img, iconName))
+                {
+                    left = new Border { Width = 28, Height = 20, Background = (Brush)FindResource("AccentBrush"), CornerRadius = new CornerRadius(3) };
+                }
+                else
+                {
+                    left = img;
+                }
+            }
+            else
+            {
+                left = new Border { Width = 28, Height = 20, Background = (Brush)FindResource("AccentBrush"), CornerRadius = new CornerRadius(3) };
+            }
+            grid.Children.Add(left);
 
             var textStack = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
             Grid.SetColumn(textStack, 1);
@@ -117,10 +128,47 @@ namespace CMLauncher
             return button;
         }
 
+        private bool TryLoadBlockIcon(Image target, string iconName)
+        {
+            try
+            {
+                var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks", iconName);
+                if (!File.Exists(path)) return false;
+                var bmp = new BitmapImage();
+                bmp.BeginInit();
+                bmp.UriSource = new Uri(path, UriKind.Absolute);
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.EndInit();
+                bmp.Freeze();
+                target.Source = bmp;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private Brush GetAccentBrush()
         {
-            // Safely fetch the accent brush defined in XAML resources
             return (Brush)FindResource("AccentBrush");
+        }
+
+        private void UpdateSelectedIcon(string? iconName)
+        {
+            // SelectedInstallIcon may not be connected yet during InitializeComponent
+            var img = this.FindName("SelectedInstallIcon") as System.Windows.Controls.Image;
+            if (img == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(iconName))
+            {
+                img.Source = null;
+                return;
+            }
+            TryLoadBlockIcon(img, iconName);
         }
 
         private void TabButton_Click(object sender, RoutedEventArgs e)
@@ -348,12 +396,14 @@ namespace CMLauncher
                 _selectedInstallButton = btn;
                 SelectionProperties.SetIsSelected(_selectedInstallButton, true);
 
-                // Update toggle texts from Tag "name|version"
+                // Update toggle texts from Tag "name|version|icon"
                 var parts = tag.Split('|');
-                if (parts.Length == 2)
+                if (parts.Length >= 2)
                 {
                     SelectedInstallName.Text = parts[0];
                     SelectedInstallVersion.Text = parts[1];
+                    var iconName = parts.Length >= 3 ? parts[2] : null;
+                    UpdateSelectedIcon(iconName);
                 }
 
                 // Close popup

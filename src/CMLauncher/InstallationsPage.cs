@@ -196,16 +196,16 @@ namespace CMLauncher
             _listHost.Children.Clear();
 
             // Always include default Steam option first
-            AddInstallationItem(_listHost, "Steam", "Latest Version", true);
+            AddInstallationItem(_listHost, null, "Steam", "Latest Version", true);
 
             var installs = InstallationService.LoadInstallations(_gameKey);
             foreach (var inst in installs)
             {
-                AddInstallationItem(_listHost, inst.Name, inst.Version, false);
+                AddInstallationItem(_listHost, inst.IconName, inst.Name, inst.Version, false);
             }
         }
         
-        private void AddInstallationItem(StackPanel panel, string name, string version, bool isSelected)
+        private void AddInstallationItem(StackPanel panel, string? iconName, string name, string version, bool isSelected)
         {
             var border = new Border
             {
@@ -218,8 +218,34 @@ namespace CMLauncher
             };
             
             var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            // Icon area
+            var iconHost = new Border { Width = 32, Height = 24, Background = new SolidColorBrush(Color.FromRgb(42, 42, 42)), CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 10, 0) };
+            var img = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(2) };
+            if (!string.IsNullOrWhiteSpace(iconName))
+            {
+                try
+                {
+                    var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks", iconName);
+                    if (System.IO.File.Exists(path))
+                    {
+                        var bmp = new BitmapImage();
+                        bmp.BeginInit();
+                        bmp.UriSource = new System.Uri(path, System.UriKind.Absolute);
+                        bmp.CacheOption = BitmapCacheOption.OnLoad;
+                        bmp.EndInit();
+                        bmp.Freeze();
+                        img.Source = bmp;
+                    }
+                }
+                catch { }
+            }
+            iconHost.Child = img;
+            Grid.SetColumn(iconHost, 0);
+            grid.Children.Add(iconHost);
             
             var infoPanel = new StackPanel();
             
@@ -238,7 +264,7 @@ namespace CMLauncher
                 Margin = new Thickness(0, 5, 0, 0)
             });
             
-            Grid.SetColumn(infoPanel, 0);
+            Grid.SetColumn(infoPanel, 1);
             grid.Children.Add(infoPanel);
             
             var buttonsPanel = new StackPanel
@@ -269,7 +295,7 @@ namespace CMLauncher
             buttonsPanel.Children.Add(playButton);
             buttonsPanel.Children.Add(editButton);
             
-            Grid.SetColumn(buttonsPanel, 1);
+            Grid.SetColumn(buttonsPanel, 2);
             grid.Children.Add(buttonsPanel);
             
             border.Child = grid;
