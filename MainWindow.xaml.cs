@@ -171,5 +171,22 @@ namespace CMLauncher
                 string instanceName = selectedItem.Content?.ToString() ?? "Unknown";
             }
         }
+
+        private void SelectInstallation_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string tag)
+            {
+                // Tag format: "name|version"
+                var parts = tag.Split('|');
+                if (parts.Length == 2)
+                {
+                    SelectedInstallName.Text = parts[0];
+                    SelectedInstallVersion.Text = parts[1];
+                }
+                
+                // Close popup
+                InstallToggle.IsChecked = false;
+            }
+        }
     }
 }

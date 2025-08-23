@@ -127,6 +127,58 @@
             <Setter Property="Padding" Value="8,5"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
+
+        <!-- Flat toggle look for the bottom-left selector -->
+        <Style x:Key="InstallToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="#2C2C2C"/>
+            <Setter Property="Foreground" Value="#CCCCCC"/>
+            <Setter Property="BorderBrush" Value="#3A3A3A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="root" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="root" Property="Background" Value="#383838"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="root" Property="Background" Value="#3F3F3F"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Menu item style inside popup -->
+        <Style x:Key="InstallMenuItemStyle" TargetType="Button">
+            <Setter Property="Background" Value="#333333"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#404040"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#4A4A4A"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -241,18 +293,82 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 
-                <!-- Version selector dropdown -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="10,15">
-                    <TextBlock Text="▼" VerticalAlignment="Center" Foreground="#AAAAAA" Margin="0,0,5,0"/>
-                    <StackPanel>
-                        <TextBlock x:Name="VersionNumberTextBlock" Text="1.21.5-forge-55.0.23" Foreground="White" FontSize="12"/>
-                    </StackPanel>
-                </StackPanel>
+                <!-- Installation selector (bottom-left) -->
+                <Grid Grid.Column="0" VerticalAlignment="Center" Margin="10,8,0,8">
+                    <ToggleButton x:Name="InstallToggle" Style="{StaticResource InstallToggleStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Width="28" Height="20" Background="#3A3A3A" CornerRadius="3" VerticalAlignment="Center">
+                                <TextBlock Text="⚒" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="SelectedInstallName" Text="forge" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
+                                <TextBlock x:Name="SelectedInstallVersion" Text="1.21.5-forge-55.0.23" Foreground="#CCCCCC" FontSize="11"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="▾" Foreground="#AAAAAA" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </Grid>
+                    </ToggleButton>
+
+                    <Popup x:Name="InstallPopup" PlacementTarget="{Binding ElementName=InstallToggle}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" IsOpen="{Binding IsChecked, ElementName=InstallToggle, Mode=TwoWay}">
+                        <Border Background="#2E2E2E" BorderBrush="#3A3A3A" BorderThickness="1" CornerRadius="4" Padding="6" >
+                            <StackPanel x:Name="InstallItemsPanel" MinWidth="260">
+                                <!-- Current/Forge selection -->
+                                <Button Style="{StaticResource InstallMenuItemStyle}" Click="SelectInstallation_Click" Tag="forge|1.21.5-forge-55.0.23">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28" Height="20" Background="#4CAF50" CornerRadius="3"/>
+                                        <StackPanel Grid.Column="1" Margin="8,0">
+                                            <TextBlock Text="forge" FontWeight="SemiBold"/>
+                                            <TextBlock Text="1.21.5-forge-55.0.23" Foreground="#CFCFCF" FontSize="12"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+
+                                <Separator Margin="0,6" Background="#404040" Height="1"/>
+
+                                <!-- Latest release -->
+                                <Button Style="{StaticResource InstallMenuItemStyle}" Click="SelectInstallation_Click" Tag="Latest release|1.21.8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28" Height="20" Background="#6A9E3A" CornerRadius="3"/>
+                                        <StackPanel Grid.Column="1" Margin="8,0">
+                                            <TextBlock Text="Latest release" FontWeight="SemiBold"/>
+                                            <TextBlock Text="1.21.8" Foreground="#CFCFCF" FontSize="12"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+
+                                <!-- Latest snapshot -->
+                                <Button Style="{StaticResource InstallMenuItemStyle}" Click="SelectInstallation_Click" Tag="Latest snapshot|25w34b">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="28" Height="20" Background="#8D6E63" CornerRadius="3"/>
+                                        <StackPanel Grid.Column="1" Margin="8,0">
+                                            <TextBlock Text="Latest snapshot" FontWeight="SemiBold"/>
+                                            <TextBlock Text="25w34b" Foreground="#CFCFCF" FontSize="12"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
 
                 <!-- Additional info could go here -->
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0">
-                    <!-- Can add content like "Included with Xbox Game Pass" here -->
-                </StackPanel>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0"/>
                 
                 <!-- Play button -->
                 <Button Grid.Column="2" Content="PLAY" Style="{StaticResource PlayButtonStyle}" 
