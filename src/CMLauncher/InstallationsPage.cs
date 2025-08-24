@@ -217,8 +217,9 @@ namespace CMLauncher
         {
             _listHost.Children.Clear();
 
-            // Steam pseudo-installation first, with Lantern icon
-            AddInstallationItem(_listHost, new InstallationInfo { GameKey = _gameKey, Name = "Steam Installation", Version = "Latest Version", IconName = SteamIconName, RootPath = "" }, true);
+            // Steam pseudo-installation first, with real version if available
+            string steamVersion = InstallationService.GetSteamExeVersion(_gameKey) ?? "Steam Version";
+            AddInstallationItem(_listHost, new InstallationInfo { GameKey = _gameKey, Name = "Steam Installation", Version = steamVersion, IconName = SteamIconName, RootPath = "" }, true);
 
             var installs = InstallationService.LoadInstallations(_gameKey);
             foreach (var inst in installs)

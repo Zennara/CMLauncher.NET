@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace CMLauncher
 {
@@ -389,6 +390,34 @@ namespace CMLauncher
                     DirectoryCopy(subdir.FullName, temppath, true);
                 }
             }
+        }
+
+        public static string? GetSteamInstallPath(string gameKey)
+        {
+            // Prefer user-saved path, then detected
+            return LauncherSettings.Current.GetSteamPathForGame(gameKey) ?? SteamLocator.FindGamePath(GetAppId(gameKey));
+        }
+
+        public static string? GetSteamExePath(string gameKey)
+        {
+            var baseDir = GetSteamInstallPath(gameKey);
+            if (string.IsNullOrWhiteSpace(baseDir)) return null;
+            var exeName = GetExeName(gameKey);
+            var path = Path.Combine(baseDir, exeName);
+            return File.Exists(path) ? path : null;
+        }
+
+        public static string? GetSteamExeVersion(string gameKey)
+        {
+            try
+            {
+                var exe = GetSteamExePath(gameKey);
+                if (string.IsNullOrWhiteSpace(exe)) return null;
+                var info = FileVersionInfo.GetVersionInfo(exe);
+                // Prefer FileVersion; fallback to ProductVersion
+                return !string.IsNullOrWhiteSpace(info.FileVersion) ? info.FileVersion : info.ProductVersion;
+            }
+            catch { return null; }
         }
     }
 

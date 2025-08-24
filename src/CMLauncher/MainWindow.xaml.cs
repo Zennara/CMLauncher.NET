@@ -64,8 +64,9 @@ namespace CMLauncher
         {
             InstallItemsPanel.Children.Clear();
 
-            // Default Steam entry uses the Lantern icon
-            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam Installation", "Latest Version", SteamIconName));
+            // Determine Steam version from exe if available
+            string steamVersion = InstallationService.GetSteamExeVersion(gameKey) ?? "Steam Version";
+            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam Installation", steamVersion, SteamIconName));
 
             var installs = InstallationService.LoadInstallations(gameKey);
             foreach (var inst in installs)
