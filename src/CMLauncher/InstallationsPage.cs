@@ -500,9 +500,30 @@ namespace CMLauncher
             try
             {
                 var exeName = info.GameKey == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
-                var gameDir = System.IO.Path.Combine(info.RootPath, "Game");
-                var exePath = System.IO.Path.Combine(gameDir, exeName);
-                InstallationService.EnsureSteamAppId(info.GameKey, gameDir);
+
+                string? gameDir;
+                var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam", System.StringComparison.OrdinalIgnoreCase);
+                if (isSteamPseudo)
+                {
+                    // Use configured or detected Steam path
+                    gameDir = LauncherSettings.Current.GetSteamPathForGame(info.GameKey);
+                    if (string.IsNullOrWhiteSpace(gameDir))
+                    {
+                        gameDir = SteamLocator.FindGamePath(InstallationService.GetAppId(info.GameKey));
+                    }
+                    if (string.IsNullOrWhiteSpace(gameDir))
+                    {
+                        // Fallback: versions root (user may have copied Steam files there)
+                        gameDir = InstallationService.GetVersionsPath(info.GameKey);
+                    }
+                }
+                else
+                {
+                    gameDir = System.IO.Path.Combine(info.RootPath, "Game");
+                }
+
+                InstallationService.EnsureSteamAppId(info.GameKey, gameDir!);
+                var exePath = System.IO.Path.Combine(gameDir!, exeName);
                 if (System.IO.File.Exists(exePath))
                 {
                     Process.Start(new ProcessStartInfo
@@ -511,6 +532,10 @@ namespace CMLauncher
                         WorkingDirectory = gameDir,
                         UseShellExecute = true
                     });
+                    if (LauncherSettings.Current.CloseOnLaunch)
+                    {
+                        Application.Current.MainWindow?.Close();
+                    }
                 }
                 else
                 {

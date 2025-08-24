@@ -48,9 +48,12 @@ namespace CMLauncher
                 if (!string.IsNullOrWhiteSpace(guess)) _steamPathCMZ.Text = guess;
             }
             var browseZ = new Button { Content = "Browse", Margin = new Thickness(8, 0, 0, 0) };
+            var refreshZ = new Button { Content = "?", Margin = new Thickness(4, 0, 0, 0), Width = 28 };
             browseZ.Click += (s2, e2) => BrowseForFolder(_steamPathCMZ, InstallationService.CMZKey);
+            refreshZ.Click += (_, __) => { AutoDetectSteamPath(_steamPathCMZ, InstallationService.CMZKey); };
             rowZ.Children.Add(_steamPathCMZ);
             rowZ.Children.Add(browseZ);
+            rowZ.Children.Add(refreshZ);
             root.Children.Add(rowZ);
 
             // CMW Steam path
@@ -63,9 +66,12 @@ namespace CMLauncher
                 if (!string.IsNullOrWhiteSpace(guess)) _steamPathCMW.Text = guess;
             }
             var browseW = new Button { Content = "Browse", Margin = new Thickness(8, 0, 0, 0) };
+            var refreshW = new Button { Content = "?", Margin = new Thickness(4, 0, 0, 0), Width = 28 };
             browseW.Click += (s2, e2) => BrowseForFolder(_steamPathCMW, InstallationService.CMWKey);
+            refreshW.Click += (_, __) => { AutoDetectSteamPath(_steamPathCMW, InstallationService.CMWKey); };
             rowW.Children.Add(_steamPathCMW);
             rowW.Children.Add(browseW);
+            rowW.Children.Add(refreshW);
             root.Children.Add(rowW);
 
             Content = root;
@@ -84,6 +90,20 @@ namespace CMLauncher
                     LauncherSettings.Current.SteamPathCMW = dlg.SelectedPath;
                 else
                     LauncherSettings.Current.SteamPathCMZ = dlg.SelectedPath;
+                LauncherSettings.Current.Save();
+            }
+        }
+
+        private void AutoDetectSteamPath(TextBox target, string gameKey)
+        {
+            var guess = SteamLocator.FindGamePath(InstallationService.GetAppId(gameKey));
+            if (!string.IsNullOrWhiteSpace(guess))
+            {
+                target.Text = guess;
+                if (string.Equals(gameKey, InstallationService.CMWKey))
+                    LauncherSettings.Current.SteamPathCMW = guess;
+                else
+                    LauncherSettings.Current.SteamPathCMZ = guess;
                 LauncherSettings.Current.Save();
             }
         }
