@@ -11,6 +11,8 @@ namespace CMLauncher
         public const string RootFolderName = ".castleminer";
         public const string CMZKey = "CMZ";
         public const string CMWKey = "CMW";
+        private const string CMZAppId = "253430";
+        private const string CMWAppId = "675210";
 
         public static string GetRootPath()
         {
@@ -27,6 +29,21 @@ namespace CMLauncher
         public static string GetInstallationsPath(string gameKey) => Path.Combine(GetGameRoot(gameKey), "installations");
         public static string GetVersionsPath(string gameKey) => Path.Combine(GetGameRoot(gameKey), "versions");
         public static string GetBlocksAssetsPath() => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks");
+
+        public static void EnsureSteamAppId(string gameKey, string gameDir)
+        {
+            try
+            {
+                Directory.CreateDirectory(gameDir);
+                var appId = string.Equals(gameKey, CMWKey, StringComparison.OrdinalIgnoreCase) ? CMWAppId : CMZAppId;
+                var file = Path.Combine(gameDir, "steam_appid.txt");
+                if (!File.Exists(file) || (File.ReadAllText(file).Trim() != appId))
+                {
+                    File.WriteAllText(file, appId);
+                }
+            }
+            catch { }
+        }
 
         public static void EnsureDirectoryStructure()
         {
@@ -179,6 +196,8 @@ namespace CMLauncher
                 icon = iconName
             }, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(infoFile, json);
+
+            EnsureSteamAppId(gameKey, gameDir);
 
             return info;
         }

@@ -272,7 +272,7 @@ namespace CMLauncher
                 BorderThickness = new Thickness(0),
                 Margin = new Thickness(0, 0, 8, 0)
             };
-            playBtn.Click += (s, e) => MessageBox.Show($"Launching {info.Name}...");
+            playBtn.Click += (s, e) => LaunchInstallation(info);
             actions.Children.Add(playBtn);
 
             // Folder glyph
@@ -500,6 +500,34 @@ namespace CMLauncher
             btn.MouseEnter += (s, e) => btn.Background = new SolidColorBrush(Color.FromRgb(70, 70, 70));
             btn.MouseLeave += (s, e) => btn.Background = Brushes.Transparent;
             return btn;
+        }
+
+        private void LaunchInstallation(InstallationInfo info)
+        {
+            try
+            {
+                var exeName = info.GameKey == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
+                var gameDir = System.IO.Path.Combine(info.RootPath, "Game");
+                var exePath = System.IO.Path.Combine(gameDir, exeName);
+                InstallationService.EnsureSteamAppId(info.GameKey, gameDir);
+                if (System.IO.File.Exists(exePath))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = exePath,
+                        WorkingDirectory = gameDir,
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    MessageBox.Show($"Executable not found: {exePath}", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch
+            {
+                MessageBox.Show("Failed to launch installation.", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

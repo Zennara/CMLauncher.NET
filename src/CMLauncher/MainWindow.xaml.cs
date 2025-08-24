@@ -363,7 +363,67 @@ namespace CMLauncher
 
         private void PlayButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Launching game...", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Information);
+            try
+            {
+                // Determine selected installation from the bottom-left selector
+                var name = SelectedInstallName.Text?.Trim();
+                var version = SelectedInstallVersion.Text?.Trim();
+                if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("No installation selected."); return; }
+
+                // Resolve installation info
+                if (string.Equals(name, "Steam", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Steam entry: just ensure appid and try launching from the Steam game directory if present in Versions
+                    var versionsRoot = InstallationService.GetVersionsPath(currentSidebarSelection);
+                    // Prefer a folder named by the selected version if not Steam Version
+                    var exeName = currentSidebarSelection == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
+                    string? gameDir = null;
+                    if (!string.IsNullOrWhiteSpace(version) && !string.Equals(version, "Latest Version", StringComparison.OrdinalIgnoreCase) && !string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var candidate = Path.Combine(versionsRoot, version);
+                        if (Directory.Exists(candidate)) gameDir = candidate;
+                    }
+                    // Fallback to versions root (may not be correct, but avoids crash)
+                    if (gameDir == null) gameDir = versionsRoot;
+                    InstallationService.EnsureSteamAppId(currentSidebarSelection, gameDir);
+                    var exePath = Path.Combine(gameDir, exeName);
+                    if (File.Exists(exePath))
+                    {
+                        Process.Start(new ProcessStartInfo { FileName = exePath, WorkingDirectory = gameDir, UseShellExecute = true });
+                    }
+                    else
+                    {
+                        MessageBox.Show("Executable not found for Steam entry. Install a version first.", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    return;
+                }
+
+                // Custom installations
+                var installs = InstallationService.LoadInstallations(currentSidebarSelection);
+                var info = installs.FirstOrDefault(i => string.Equals(i.Name, name, StringComparison.OrdinalIgnoreCase));
+                if (info == null)
+                {
+                    MessageBox.Show("Selected installation not found.");
+                    return;
+                }
+
+                var exe = currentSidebarSelection == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
+                var game = Path.Combine(info.RootPath, "Game");
+                var exePath2 = Path.Combine(game, exe);
+                InstallationService.EnsureSteamAppId(currentSidebarSelection, game);
+                if (File.Exists(exePath2))
+                {
+                    Process.Start(new ProcessStartInfo { FileName = exePath2, WorkingDirectory = game, UseShellExecute = true });
+                }
+                else
+                {
+                    MessageBox.Show($"Executable not found: {exePath2}", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to launch: {ex.Message}", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void InstanceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
