@@ -65,7 +65,7 @@ namespace CMLauncher
             InstallItemsPanel.Children.Clear();
 
             // Default Steam entry uses the Lantern icon
-            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam", "Latest Version", SteamIconName));
+            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam Installation", "Latest Version", SteamIconName));
 
             var installs = InstallationService.LoadInstallations(gameKey);
             foreach (var inst in installs)
@@ -381,7 +381,7 @@ namespace CMLauncher
 
                 bool launched = false;
 
-                if (string.Equals(name, "Steam", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(name, "Steam Installation", StringComparison.OrdinalIgnoreCase))
                 {
                     var exeName = currentSidebarSelection == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
 

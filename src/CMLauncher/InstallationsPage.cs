@@ -218,7 +218,7 @@ namespace CMLauncher
             _listHost.Children.Clear();
 
             // Steam pseudo-installation first, with Lantern icon
-            AddInstallationItem(_listHost, new InstallationInfo { GameKey = _gameKey, Name = "Steam", Version = "Latest Version", IconName = SteamIconName, RootPath = "" }, true);
+            AddInstallationItem(_listHost, new InstallationInfo { GameKey = _gameKey, Name = "Steam Installation", Version = "Latest Version", IconName = SteamIconName, RootPath = "" }, true);
 
             var installs = InstallationService.LoadInstallations(_gameKey);
             foreach (var inst in installs)
@@ -305,7 +305,7 @@ namespace CMLauncher
                 try
                 {
                     string? path;
-                    var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam", System.StringComparison.OrdinalIgnoreCase);
+                    var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
                     if (isSteamPseudo)
                     {
                         // Use configured/detected steam path
@@ -324,7 +324,7 @@ namespace CMLauncher
             actions.Children.Add(folderBtn);
 
             // More menu
-            bool isDefaultSteam = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam", System.StringComparison.OrdinalIgnoreCase);
+            bool isDefaultSteam = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
             if (!isDefaultSteam)
             {
                 var menuToggle = new ToggleButton
@@ -361,7 +361,7 @@ namespace CMLauncher
         private void ShowEditDialog(InstallationInfo info)
         {
             // Guard: do not allow editing the default Steam installation
-            if (string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam", System.StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase))
                 return;
 
             var dlg = new Window
@@ -513,7 +513,7 @@ namespace CMLauncher
                 var exeName = info.GameKey == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
 
                 string? gameDir;
-                var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam", System.StringComparison.OrdinalIgnoreCase);
+                var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
                 if (isSteamPseudo)
                 {
                     // Use configured or detected Steam path
