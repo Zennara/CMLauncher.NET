@@ -52,7 +52,7 @@ namespace CMLauncher
             }
             var browseZ = new Button { Content = "Browse", Margin = new Thickness(8, 0, 0, 0) };
             var refreshZ = new Button { Margin = new Thickness(4, 0, 0, 0), Width = 30, Height = 28 };
-            refreshZ.Content = new TextBlock { Text = "\uE72C", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+            refreshZ.Content = new TextBlock { Text = "\uE72C", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             browseZ.Click += (s2, e2) => BrowseForFolder(_steamPathCMZ, InstallationService.CMZKey);
             refreshZ.Click += (_, __) => { AutoDetectSteamPath(_steamPathCMZ, InstallationService.CMZKey); };
             rowZ.Children.Add(_steamPathCMZ);
@@ -71,7 +71,7 @@ namespace CMLauncher
             }
             var browseW = new Button { Content = "Browse", Margin = new Thickness(8, 0, 0, 0) };
             var refreshW = new Button { Margin = new Thickness(4, 0, 0, 0), Width = 30, Height = 28 };
-            refreshW.Content = new TextBlock { Text = "\uE72C", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+            refreshW.Content = new TextBlock { Text = "\uE72C", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
             browseW.Click += (s2, e2) => BrowseForFolder(_steamPathCMW, InstallationService.CMWKey);
             refreshW.Click += (_, __) => { AutoDetectSteamPath(_steamPathCMW, InstallationService.CMWKey); };
             rowW.Children.Add(_steamPathCMW);
