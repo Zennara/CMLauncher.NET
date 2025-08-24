@@ -365,28 +365,34 @@ namespace CMLauncher
         {
             try
             {
-                // Determine selected installation from the bottom-left selector
                 var name = SelectedInstallName.Text?.Trim();
                 var version = SelectedInstallVersion.Text?.Trim();
                 if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("No installation selected."); return; }
 
-                // Resolve installation info
                 if (string.Equals(name, "Steam", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Steam entry: just ensure appid and try launching from the Steam game directory if present in Versions
-                    var versionsRoot = InstallationService.GetVersionsPath(currentSidebarSelection);
-                    // Prefer a folder named by the selected version if not Steam Version
                     var exeName = currentSidebarSelection == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
-                    string? gameDir = null;
-                    if (!string.IsNullOrWhiteSpace(version) && !string.Equals(version, "Latest Version", StringComparison.OrdinalIgnoreCase) && !string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
+
+                    // Prefer actual Steam install directory
+                    var steamDir = SteamLocator.FindGamePath(InstallationService.GetAppId(currentSidebarSelection));
+                    string? gameDir = steamDir;
+
+                    // If user picked a specific version and steamDir not found, try versions folder
+                    if (string.IsNullOrWhiteSpace(gameDir))
                     {
-                        var candidate = Path.Combine(versionsRoot, version);
-                        if (Directory.Exists(candidate)) gameDir = candidate;
+                        var versionsRoot = InstallationService.GetVersionsPath(currentSidebarSelection);
+                        if (!string.IsNullOrWhiteSpace(version) &&
+                            !string.Equals(version, "Latest Version", StringComparison.OrdinalIgnoreCase) &&
+                            !string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var candidate = Path.Combine(versionsRoot, version);
+                            if (Directory.Exists(candidate)) gameDir = candidate;
+                        }
+                        if (gameDir == null) gameDir = versionsRoot;
                     }
-                    // Fallback to versions root (may not be correct, but avoids crash)
-                    if (gameDir == null) gameDir = versionsRoot;
-                    InstallationService.EnsureSteamAppId(currentSidebarSelection, gameDir);
-                    var exePath = Path.Combine(gameDir, exeName);
+
+                    InstallationService.EnsureSteamAppId(currentSidebarSelection, gameDir!);
+                    var exePath = Path.Combine(gameDir!, exeName);
                     if (File.Exists(exePath))
                     {
                         Process.Start(new ProcessStartInfo { FileName = exePath, WorkingDirectory = gameDir, UseShellExecute = true });

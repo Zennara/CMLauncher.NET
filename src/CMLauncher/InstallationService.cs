@@ -137,6 +137,9 @@ namespace CMLauncher
             return names;
         }
 
+        public static string GetExeName(string gameKey) => string.Equals(gameKey, CMWKey, StringComparison.OrdinalIgnoreCase) ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
+        public static string GetAppId(string gameKey) => string.Equals(gameKey, CMWKey, StringComparison.OrdinalIgnoreCase) ? CMWAppId : CMZAppId;
+
         public static InstallationInfo CreateInstallation(string gameKey, string name, string version, string? iconName = null)
         {
             var installsRoot = GetInstallationsPath(gameKey);
@@ -167,10 +170,21 @@ namespace CMLauncher
                 }
             }
 
-            // Copy version files into Game if a matching version folder exists
+            // Steam Version: prefer copying from actual Steam install path
+            var versionSource = Path.Combine(GetVersionsPath(gameKey), version);
+            if (string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
+            {
+                var appId = GetAppId(gameKey);
+                var steamDir = SteamLocator.FindGamePath(appId);
+                if (!string.IsNullOrWhiteSpace(steamDir) && Directory.Exists(steamDir))
+                {
+                    versionSource = steamDir;
+                }
+            }
+
+            // Copy version files into Game if a matching source exists
             try
             {
-                var versionSource = Path.Combine(GetVersionsPath(gameKey), version);
                 if (Directory.Exists(versionSource))
                 {
                     DirectoryCopy(versionSource, gameDir, true);
@@ -183,7 +197,7 @@ namespace CMLauncher
                 GameKey = gameKey,
                 Name = finalName,
                 Version = version,
-                Timestamp = null, // last played set elsewhere
+                Timestamp = null,
                 RootPath = candidatePath,
                 IconName = iconName
             };
@@ -296,10 +310,20 @@ namespace CMLauncher
             }
             catch { }
 
-            // If local version exists, copy it in; otherwise fall back to placeholder download
+            // Prefer Steam install for Steam Version
+            string versionSource = Path.Combine(GetVersionsPath(info.GameKey), version);
+            if (string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
+            {
+                var appId = GetAppId(info.GameKey);
+                var steamDir = SteamLocator.FindGamePath(appId);
+                if (!string.IsNullOrWhiteSpace(steamDir) && Directory.Exists(steamDir))
+                {
+                    versionSource = steamDir;
+                }
+            }
+
             try
             {
-                var versionSource = Path.Combine(GetVersionsPath(info.GameKey), version);
                 if (Directory.Exists(versionSource))
                 {
                     DirectoryCopy(versionSource, gameDir, true);
