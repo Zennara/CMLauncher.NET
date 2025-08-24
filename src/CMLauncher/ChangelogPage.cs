@@ -1,6 +1,9 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Brushes = System.Windows.Media.Brushes;
+using Color = System.Windows.Media.Color;
+using Orientation = System.Windows.Controls.Orientation;
 
 namespace CMLauncher
 {

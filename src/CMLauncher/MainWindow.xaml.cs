@@ -7,6 +7,16 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+// Alias to avoid ambiguity with WinForms
+using Button = System.Windows.Controls.Button;
+using Image = System.Windows.Controls.Image;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
+using ComboBox = System.Windows.Controls.ComboBox;
+using Color = System.Windows.Media.Color;
+using MessageBox = System.Windows.MessageBox;
+using HorizontalAlignment = System.Windows.HorizontalAlignment;
+using VerticalAlignment = System.Windows.VerticalAlignment;
 
 namespace CMLauncher
 {
@@ -94,7 +104,7 @@ namespace CMLauncher
             {
                 Style = (Style)FindResource("InstallMenuItemStyle"),
                 Tag = $"{name}|{version}|{iconName}",
-                HorizontalContentAlignment = HorizontalAlignment.Stretch
+                HorizontalContentAlignment = System.Windows.HorizontalAlignment.Stretch
             };
 
             var grid = new Grid();
