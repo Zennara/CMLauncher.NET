@@ -304,8 +304,19 @@ namespace CMLauncher
             {
                 try
                 {
-                    var path = string.IsNullOrEmpty(info.RootPath) ? InstallationService.GetInstallationsPath(info.GameKey) : info.RootPath;
-                    if (System.IO.Directory.Exists(path))
+                    string? path;
+                    var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam", System.StringComparison.OrdinalIgnoreCase);
+                    if (isSteamPseudo)
+                    {
+                        // Use configured/detected steam path
+                        path = LauncherSettings.Current.GetSteamPathForGame(info.GameKey) ?? SteamLocator.FindGamePath(InstallationService.GetAppId(info.GameKey));
+                    }
+                    else
+                    {
+                        path = string.IsNullOrEmpty(info.RootPath) ? InstallationService.GetInstallationsPath(info.GameKey) : info.RootPath;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(path) && System.IO.Directory.Exists(path))
                         Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
                 }
                 catch { }
