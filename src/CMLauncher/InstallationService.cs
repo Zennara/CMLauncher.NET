@@ -135,7 +135,8 @@ namespace CMLauncher
             }
 
             Directory.CreateDirectory(candidatePath);
-            Directory.CreateDirectory(Path.Combine(candidatePath, "Game"));
+            var gameDir = Path.Combine(candidatePath, "Game");
+            Directory.CreateDirectory(gameDir);
             Directory.CreateDirectory(Path.Combine(candidatePath, "Data"));
 
             // Choose a random icon if none provided
@@ -148,6 +149,17 @@ namespace CMLauncher
                     iconName = icons[rnd.Next(icons.Count)];
                 }
             }
+
+            // Copy version files into Game if a matching version folder exists
+            try
+            {
+                var versionSource = Path.Combine(GetVersionsPath(gameKey), version);
+                if (Directory.Exists(versionSource))
+                {
+                    DirectoryCopy(versionSource, gameDir, true);
+                }
+            }
+            catch { }
 
             var info = new InstallationInfo
             {
@@ -265,8 +277,20 @@ namespace CMLauncher
             }
             catch { }
 
-            // Placeholder download logic
-            DownloadGameVersion(info, version);
+            // If local version exists, copy it in; otherwise fall back to placeholder download
+            try
+            {
+                var versionSource = Path.Combine(GetVersionsPath(info.GameKey), version);
+                if (Directory.Exists(versionSource))
+                {
+                    DirectoryCopy(versionSource, gameDir, true);
+                }
+                else
+                {
+                    DownloadGameVersion(info, version); // placeholder
+                }
+            }
+            catch { }
 
             // Update info file
             var path = Path.Combine(info.RootPath, "installation-info.json");
