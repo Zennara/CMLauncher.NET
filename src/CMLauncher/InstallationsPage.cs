@@ -322,27 +322,6 @@ namespace CMLauncher
                 menuPopup.Closed += (s, e) => menuToggle.IsChecked = false;
                 actions.Children.Add(menuToggle);
             }
-            else
-            {
-                // Optional: only allow Duplicate for Steam default via a smaller overflow
-                var menuToggle = new ToggleButton
-                {
-                    Padding = new Thickness(10, 6, 10, 6),
-                    Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
-                    Foreground = Brushes.White,
-                    BorderThickness = new Thickness(0),
-                    ToolTip = "More"
-                };
-                menuToggle.Content = new TextBlock { Text = "\uE712", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
-                var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
-                var menuStack = new StackPanel();
-                menuStack.Children.Add(CreateMenuItem("Duplicate", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; /* duplicate default not meaningful; omit or implement as needed */ }));
-                menuPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)), BorderThickness = new Thickness(1), Child = menuStack };
-                menuToggle.Checked += (s, e) => menuPopup.IsOpen = true;
-                menuToggle.Unchecked += (s, e) => menuPopup.IsOpen = false;
-                menuPopup.Closed += (s, e) => menuToggle.IsChecked = false;
-                actions.Children.Add(menuToggle);
-            }
 
             Grid.SetColumn(actions, 2);
             grid.Children.Add(actions);
