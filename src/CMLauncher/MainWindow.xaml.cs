@@ -1,5 +1,8 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,9 +19,6 @@ using MessageBox = System.Windows.MessageBox;
 
 namespace CMLauncher
 {
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
 	public partial class MainWindow : Window
 	{
 		private const string SteamIconName = "Lantern.png"; // expected filename in assets/blocks
@@ -90,6 +90,7 @@ namespace CMLauncher
 			InstallItemsPanel.Children.Clear();
 
 			bool any = false;
+			int itemCount = 0;
 
 			// Build list with Steam (if present) and custom installs
 			var steamExe = InstallationService.GetSteamExePath(gameKey);
@@ -98,6 +99,7 @@ namespace CMLauncher
 				string steamVersion = InstallationService.GetSteamExeVersion(gameKey) ?? "Steam Version";
 				InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam Installation", steamVersion, SteamIconName));
 				any = true;
+				itemCount++;
 			}
 
 			var installs = InstallationService.LoadInstallations(gameKey)
@@ -108,6 +110,13 @@ namespace CMLauncher
 			{
 				InstallItemsPanel.Children.Add(CreateInstallMenuButton(inst.Name, inst.Version, inst.IconName));
 				any = true;
+				itemCount++;
+			}
+
+			// Cap popup height to around 5 items (each ~34px incl. margins) when needed
+			if (InstallItemsScroll != null)
+			{
+				InstallItemsScroll.MaxHeight = itemCount > 5 ? 5 * 36 : double.PositiveInfinity;
 			}
 
 			if (!any)

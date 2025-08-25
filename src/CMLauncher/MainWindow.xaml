@@ -415,7 +415,9 @@
                            PopupAnimation="Fade"
                            IsOpen="{Binding IsChecked, ElementName=InstallToggle, Mode=TwoWay}">
                         <Border Background="{StaticResource AppBackgroundBrush}" BorderThickness="0" CornerRadius="4" Padding="0">
-                            <StackPanel x:Name="InstallItemsPanel" MinWidth="{Binding ElementName=InstallToggle, Path=ActualWidth}" />
+                            <ScrollViewer x:Name="InstallItemsScroll" VerticalScrollBarVisibility="Auto" Background="Transparent">
+                                <StackPanel x:Name="InstallItemsPanel" MinWidth="{Binding ElementName=InstallToggle, Path=ActualWidth}" />
+                            </ScrollViewer>
                         </Border>
                     </Popup>
                 </Grid>
