@@ -1,600 +1,598 @@
 using System.Diagnostics;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Button = System.Windows.Controls.Button;
-using Image = System.Windows.Controls.Image;
+using Application = System.Windows.Application;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
+using Button = System.Windows.Controls.Button;
 using Color = System.Windows.Media.Color;
-using MessageBox = System.Windows.MessageBox;
-using Application = System.Windows.Application;
-using TextBox = System.Windows.Controls.TextBox;
 using ComboBox = System.Windows.Controls.ComboBox;
 using FontFamily = System.Windows.Media.FontFamily;
-using Orientation = System.Windows.Controls.Orientation;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
+using Image = System.Windows.Controls.Image;
+using MessageBox = System.Windows.MessageBox;
+using Orientation = System.Windows.Controls.Orientation;
+using TextBox = System.Windows.Controls.TextBox;
 using VerticalAlignment = System.Windows.VerticalAlignment;
-using System;
 
 namespace CMLauncher
 {
-    public class InstallationsPage : Page
-    {
-        private const string SteamIconName = "Lantern.png"; // icon file in assets/blocks
+	public class InstallationsPage : Page
+	{
+		private const string SteamIconName = "Lantern.png"; // icon file in assets/blocks
 
-        private StackPanel _listHost = null!;
-        private readonly string _gameKey;
+		private StackPanel _listHost = null!;
+		private readonly string _gameKey;
 
-        public InstallationsPage(string gameKey)
-        {
-            _gameKey = gameKey;
-            Background = new SolidColorBrush(Color.FromRgb(32, 32, 32));
+		public InstallationsPage(string gameKey)
+		{
+			_gameKey = gameKey;
+			Background = new SolidColorBrush(Color.FromRgb(32, 32, 32));
 
-            var root = new Grid { Margin = new Thickness(20) };
-            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+			var root = new Grid { Margin = new Thickness(20) };
+			root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+			root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-            var headerGrid = new Grid();
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            headerGrid.Children.Add(new TextBlock
-            {
-                Text = "Installations",
-                FontSize = 24,
-                FontWeight = FontWeights.Bold,
-                Foreground = Brushes.White,
-                Margin = new Thickness(0, 0, 0, 20)
-            });
-            var newBtn = new Button
-            {
-                Content = "New Installation",
-                Padding = new Thickness(15, 8, 15, 8),
-                Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"),
-                Foreground = Brushes.White,
-                BorderThickness = new Thickness(0),
-                Margin = new Thickness(10, 0, 0, 20)
-            };
-            newBtn.Click += (s, e) => ShowCreateDialog();
-            Grid.SetColumn(newBtn, 1);
-            headerGrid.Children.Add(newBtn);
-            Grid.SetRow(headerGrid, 0);
-            root.Children.Add(headerGrid);
+			var headerGrid = new Grid();
+			headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+			headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+			headerGrid.Children.Add(new TextBlock
+			{
+				Text = "Installations",
+				FontSize = 24,
+				FontWeight = FontWeights.Bold,
+				Foreground = Brushes.White,
+				Margin = new Thickness(0, 0, 0, 20)
+			});
+			var newBtn = new Button
+			{
+				Content = "New Installation",
+				Padding = new Thickness(15, 8, 15, 8),
+				Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"),
+				Foreground = Brushes.White,
+				BorderThickness = new Thickness(0),
+				Margin = new Thickness(10, 0, 0, 20)
+			};
+			newBtn.Click += (s, e) => ShowCreateDialog();
+			Grid.SetColumn(newBtn, 1);
+			headerGrid.Children.Add(newBtn);
+			Grid.SetRow(headerGrid, 0);
+			root.Children.Add(headerGrid);
 
-            var scroll = new ScrollViewer
-            {
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Background = Brushes.Transparent
-            };
-            _listHost = new StackPanel();
-            scroll.Content = _listHost;
-            Grid.SetRow(scroll, 1);
-            root.Children.Add(scroll);
+			var scroll = new ScrollViewer
+			{
+				VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+				Background = Brushes.Transparent
+			};
+			_listHost = new StackPanel();
+			scroll.Content = _listHost;
+			Grid.SetRow(scroll, 1);
+			root.Children.Add(scroll);
 
-            Content = root;
+			Content = root;
 
-            RefreshList();
-        }
+			RefreshList();
+		}
 
-        private void ShowCreateDialog()
-        {
-            var dlg = new Window
-            {
-                Title = "Create new installation",
-                Owner = Application.Current.MainWindow,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                SizeToContent = SizeToContent.WidthAndHeight,
-                Background = new SolidColorBrush(Color.FromRgb(27, 27, 27)),
-                Foreground = Brushes.White,
-                ResizeMode = ResizeMode.NoResize
-            };
+		private void ShowCreateDialog()
+		{
+			var dlg = new Window
+			{
+				Title = "Create new installation",
+				Owner = Application.Current.MainWindow,
+				WindowStartupLocation = WindowStartupLocation.CenterOwner,
+				SizeToContent = SizeToContent.WidthAndHeight,
+				Background = new SolidColorBrush(Color.FromRgb(27, 27, 27)),
+				Foreground = Brushes.White,
+				ResizeMode = ResizeMode.NoResize
+			};
 
-            var panel = new StackPanel { Margin = new Thickness(20) };
+			var panel = new StackPanel { Margin = new Thickness(20) };
 
-            // Icon selector - centered with small caret toggle
-            var iconArea = new Grid { HorizontalAlignment = System.Windows.HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 12) };
-            iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+			// Icon selector - centered with small caret toggle
+			var iconArea = new Grid { HorizontalAlignment = System.Windows.HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 12) };
+			iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+			iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            var currentIcon = new Image { Width = 56, Height = 56, Stretch = Stretch.Uniform };
-            var allIcons = InstallationService.LoadAvailableIcons();
-            string? selectedIcon = null;
-            // pick a random default for preview and selection
-            if (allIcons.Count > 0)
-            {
-                var rnd = new System.Random();
-                selectedIcon = allIcons[rnd.Next(allIcons.Count)];
-            }
-            SetIconImage(currentIcon, selectedIcon);
-            Grid.SetColumn(currentIcon, 0);
-            iconArea.Children.Add(currentIcon);
+			var currentIcon = new Image { Width = 56, Height = 56, Stretch = Stretch.Uniform };
+			var allIcons = InstallationService.LoadAvailableIcons();
+			string? selectedIcon = null;
+			// pick a random default for preview and selection
+			if (allIcons.Count > 0)
+			{
+				var rnd = new System.Random();
+				selectedIcon = allIcons[rnd.Next(allIcons.Count)];
+			}
+			SetIconImage(currentIcon, selectedIcon);
+			Grid.SetColumn(currentIcon, 0);
+			iconArea.Children.Add(currentIcon);
 
-            var caretToggle = new ToggleButton
-            {
-                Margin = new Thickness(8, 0, 0, 0),
-                Padding = new Thickness(6, 0, 6, 0),
-                Background = Brushes.Transparent,
-                Foreground = Brushes.White,
-                BorderBrush = new SolidColorBrush(Color.FromRgb(64, 64, 64)),
-                BorderThickness = new Thickness(1),
-                VerticalAlignment = System.Windows.VerticalAlignment.Center,
-                FocusVisualStyle = null,
-                FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                Content = "\uE70D"
-            };
-            Grid.SetColumn(caretToggle, 1);
-            iconArea.Children.Add(caretToggle);
+			var caretToggle = new ToggleButton
+			{
+				Margin = new Thickness(8, 0, 0, 0),
+				Padding = new Thickness(6, 0, 6, 0),
+				Background = Brushes.Transparent,
+				Foreground = Brushes.White,
+				BorderBrush = new SolidColorBrush(Color.FromRgb(64, 64, 64)),
+				BorderThickness = new Thickness(1),
+				VerticalAlignment = System.Windows.VerticalAlignment.Center,
+				FocusVisualStyle = null,
+				FontFamily = new FontFamily("Segoe MDL2 Assets"),
+				Content = "\uE70D"
+			};
+			Grid.SetColumn(caretToggle, 1);
+			iconArea.Children.Add(caretToggle);
 
-            var iconPopup = new Popup
-            {
-                PlacementTarget = caretToggle,
-                Placement = PlacementMode.Bottom,
-                StaysOpen = false,
-                AllowsTransparency = true
-            };
-            var iconScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 260, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)) };
-            var iconWrap = new WrapPanel { Margin = new Thickness(8) };
-            foreach (var iconName in allIcons)
-            {
-                var img = new Image { Width = 40, Height = 40, Stretch = Stretch.Uniform, Margin = new Thickness(4) };
-                SetIconImage(img, iconName);
-                var btn = new Button { Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = Brushes.Transparent, Tag = iconName, Content = img };
-                btn.Click += (s, e) => { selectedIcon = iconName; SetIconImage(currentIcon, selectedIcon); iconPopup.IsOpen = false; caretToggle.IsChecked = false; };
-                iconWrap.Children.Add(btn);
-            }
-            iconScroll.Content = iconWrap;
-            iconPopup.Child = new Border { Width = 420, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), Child = iconScroll };
-            caretToggle.Checked += (s, e) => iconPopup.IsOpen = true;
-            caretToggle.Unchecked += (s, e) => iconPopup.IsOpen = false;
-            iconPopup.Closed += (s, e) => { caretToggle.IsChecked = false; };
+			var iconPopup = new Popup
+			{
+				PlacementTarget = caretToggle,
+				Placement = PlacementMode.Bottom,
+				StaysOpen = false,
+				AllowsTransparency = true
+			};
+			var iconScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 260, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)) };
+			var iconWrap = new WrapPanel { Margin = new Thickness(8) };
+			foreach (var iconName in allIcons)
+			{
+				var img = new Image { Width = 40, Height = 40, Stretch = Stretch.Uniform, Margin = new Thickness(4) };
+				SetIconImage(img, iconName);
+				var btn = new Button { Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = Brushes.Transparent, Tag = iconName, Content = img };
+				btn.Click += (s, e) => { selectedIcon = iconName; SetIconImage(currentIcon, selectedIcon); iconPopup.IsOpen = false; caretToggle.IsChecked = false; };
+				iconWrap.Children.Add(btn);
+			}
+			iconScroll.Content = iconWrap;
+			iconPopup.Child = new Border { Width = 420, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), Child = iconScroll };
+			caretToggle.Checked += (s, e) => iconPopup.IsOpen = true;
+			caretToggle.Unchecked += (s, e) => iconPopup.IsOpen = false;
+			iconPopup.Closed += (s, e) => { caretToggle.IsChecked = false; };
 
-            panel.Children.Add(iconArea);
+			panel.Children.Add(iconArea);
 
-            panel.Children.Add(new TextBlock { Text = "Name", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
-            var nameBox = new TextBox { Width = 360, Text = "Unnamed installation" };
-            panel.Children.Add(nameBox);
+			panel.Children.Add(new TextBlock { Text = "Name", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
+			var nameBox = new TextBox { Width = 360, Text = "Unnamed installation" };
+			panel.Children.Add(nameBox);
 
-            panel.Children.Add(new TextBlock { Text = "Version", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 6) });
-            var versionCombo = new ComboBox { Width = 360 };
+			panel.Children.Add(new TextBlock { Text = "Version", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 6) });
+			var versionCombo = new ComboBox { Width = 360 };
 
-            // Only add Steam Version if EXE exists
-            var steamExe = InstallationService.GetSteamExePath(_gameKey);
-            if (!string.IsNullOrWhiteSpace(steamExe))
-            {
-                versionCombo.Items.Add("Steam Version");
-            }
-            foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
-            {
-                versionCombo.Items.Add(v);
-            }
-            versionCombo.SelectedIndex = versionCombo.Items.Count > 0 ? 0 : -1;
-            panel.Children.Add(versionCombo);
+			// Only add Steam Version if EXE exists
+			var steamExe = InstallationService.GetSteamExePath(_gameKey);
+			if (!string.IsNullOrWhiteSpace(steamExe))
+			{
+				versionCombo.Items.Add("Steam Version");
+			}
+			foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
+			{
+				versionCombo.Items.Add(v);
+			}
+			versionCombo.SelectedIndex = versionCombo.Items.Count > 0 ? 0 : -1;
+			panel.Children.Add(versionCombo);
 
-            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
-            var cancel = new Button { Content = "Cancel", Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 6, 14, 6) };
-            cancel.Click += (s, e) => dlg.Close();
-            var create = new Button { Content = "Install", Padding = new Thickness(14, 6, 14, 6), Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"), Foreground = Brushes.White, BorderThickness = new Thickness(0) };
-            create.Click += (s, e) =>
-            {
-                var name = string.IsNullOrWhiteSpace(nameBox.Text) ? "Unnamed installation" : nameBox.Text.Trim();
-                var version = versionCombo.SelectedItem?.ToString() ?? string.Empty;
-                if (string.IsNullOrEmpty(version)) { MessageBox.Show("Please select a version."); return; }
-                InstallationService.CreateInstallation(_gameKey, name, version, selectedIcon);
-                dlg.Close();
-                RefreshList();
-                // Also refresh the bottom-left selector immediately
-                if (Application.Current?.MainWindow is MainWindow mw)
-                {
-                    mw.RefreshInstallationsMenu();
-                }
-            };
-            buttons.Children.Add(cancel);
-            buttons.Children.Add(create);
-            panel.Children.Add(buttons);
+			var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
+			var cancel = new Button { Content = "Cancel", Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 6, 14, 6) };
+			cancel.Click += (s, e) => dlg.Close();
+			var create = new Button { Content = "Install", Padding = new Thickness(14, 6, 14, 6), Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"), Foreground = Brushes.White, BorderThickness = new Thickness(0) };
+			create.Click += (s, e) =>
+			{
+				var name = string.IsNullOrWhiteSpace(nameBox.Text) ? "Unnamed installation" : nameBox.Text.Trim();
+				var version = versionCombo.SelectedItem?.ToString() ?? string.Empty;
+				if (string.IsNullOrEmpty(version)) { MessageBox.Show("Please select a version."); return; }
+				InstallationService.CreateInstallation(_gameKey, name, version, selectedIcon);
+				dlg.Close();
+				RefreshList();
+				// Also refresh the bottom-left selector immediately
+				if (Application.Current?.MainWindow is MainWindow mw)
+				{
+					mw.RefreshInstallationsMenu();
+				}
+			};
+			buttons.Children.Add(cancel);
+			buttons.Children.Add(create);
+			panel.Children.Add(buttons);
 
-            dlg.Content = panel;
-            dlg.ShowDialog();
-        }
+			dlg.Content = panel;
+			dlg.ShowDialog();
+		}
 
-        private static void SetIconImage(Image img, string? iconName)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(iconName)) { img.Source = null; return; }
-                var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks", iconName);
-                if (!System.IO.File.Exists(path)) { img.Source = null; return; }
-                var bmp = new BitmapImage();
-                bmp.BeginInit();
-                bmp.UriSource = new System.Uri(path, System.UriKind.Absolute);
-                bmp.CacheOption = BitmapCacheOption.OnLoad;
-                bmp.EndInit();
-                bmp.Freeze();
-                img.Source = bmp;
-            }
-            catch
-            {
-                img.Source = null;
-            }
-        }
+		private static void SetIconImage(Image img, string? iconName)
+		{
+			try
+			{
+				if (string.IsNullOrWhiteSpace(iconName)) { img.Source = null; return; }
+				var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks", iconName);
+				if (!System.IO.File.Exists(path)) { img.Source = null; return; }
+				var bmp = new BitmapImage();
+				bmp.BeginInit();
+				bmp.UriSource = new System.Uri(path, System.UriKind.Absolute);
+				bmp.CacheOption = BitmapCacheOption.OnLoad;
+				bmp.EndInit();
+				bmp.Freeze();
+				img.Source = bmp;
+			}
+			catch
+			{
+				img.Source = null;
+			}
+		}
 
-        private void RefreshList()
-        {
-            _listHost.Children.Clear();
+		private void RefreshList()
+		{
+			_listHost.Children.Clear();
 
-            bool firstAdded = false;
+			bool firstAdded = false;
 
-            var steamExe = InstallationService.GetSteamExePath(_gameKey);
-            if (!string.IsNullOrWhiteSpace(steamExe))
-            {
-                string steamVersion = InstallationService.GetSteamExeVersion(_gameKey) ?? "Steam Version";
-                var steamTs = InstallationService.GetSteamLastPlayed(_gameKey);
-                var steamInfo = new InstallationInfo { GameKey = _gameKey, Name = "Steam Installation", Version = steamVersion, IconName = SteamIconName, RootPath = "", Timestamp = steamTs };
-                AddInstallationItem(_listHost, steamInfo, isSelected: true);
-                firstAdded = true;
-            }
+			var steamExe = InstallationService.GetSteamExePath(_gameKey);
+			if (!string.IsNullOrWhiteSpace(steamExe))
+			{
+				string steamVersion = InstallationService.GetSteamExeVersion(_gameKey) ?? "Steam Version";
+				var steamTs = InstallationService.GetSteamLastPlayed(_gameKey);
+				var steamInfo = new InstallationInfo { GameKey = _gameKey, Name = "Steam Installation", Version = steamVersion, IconName = SteamIconName, RootPath = "", Timestamp = steamTs };
+				AddInstallationItem(_listHost, steamInfo, isSelected: true);
+				firstAdded = true;
+			}
 
-            var installs = InstallationService.LoadInstallations(_gameKey)
-                .OrderByDescending(i => i.Timestamp ?? DateTime.MinValue)
-                .ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+			var installs = InstallationService.LoadInstallations(_gameKey)
+				.OrderByDescending(i => i.Timestamp ?? DateTime.MinValue)
+				.ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+				.ToList();
 
-            foreach (var inst in installs)
-            {
-                AddInstallationItem(_listHost, inst, isSelected: !firstAdded);
-                firstAdded = true;
-            }
-        }
+			foreach (var inst in installs)
+			{
+				AddInstallationItem(_listHost, inst, isSelected: !firstAdded);
+				firstAdded = true;
+			}
+		}
 
-        private void AddInstallationItem(StackPanel panel, InstallationInfo info, bool isSelected)
-        {
-            var border = new Border
-            {
-                Background = isSelected ? new SolidColorBrush(Color.FromRgb(60, 60, 60)) : new SolidColorBrush(Color.FromRgb(45, 45, 45)),
-                Margin = new Thickness(0, 0, 0, 10),
-                Padding = new Thickness(15),
-                CornerRadius = new CornerRadius(3)
-            };
+		private void AddInstallationItem(StackPanel panel, InstallationInfo info, bool isSelected)
+		{
+			var border = new Border
+			{
+				Background = isSelected ? new SolidColorBrush(Color.FromRgb(60, 60, 60)) : new SolidColorBrush(Color.FromRgb(45, 45, 45)),
+				Margin = new Thickness(0, 0, 0, 10),
+				Padding = new Thickness(15),
+				CornerRadius = new CornerRadius(3)
+			};
 
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+			var grid = new Grid();
+			grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+			grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+			grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            // Icon
-            var iconHost = new Border { Width = 48, Height = 48, Background = Brushes.Transparent, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
-            var img = new Image { Stretch = Stretch.Uniform };
-            if (!string.IsNullOrWhiteSpace(info.IconName))
-            {
-                try
-                {
-                    var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks", info.IconName);
-                    if (System.IO.File.Exists(path))
-                    {
-                        var bmp = new BitmapImage();
-                        bmp.BeginInit();
-                        bmp.UriSource = new System.Uri(path, System.UriKind.Absolute);
-                        bmp.CacheOption = BitmapCacheOption.OnLoad;
-                        bmp.EndInit();
-                        bmp.Freeze();
-                        img.Source = bmp;
-                    }
-                }
-                catch { }
-            }
-            iconHost.Child = img;
-            Grid.SetColumn(iconHost, 0);
-            grid.Children.Add(iconHost);
+			// Icon
+			var iconHost = new Border { Width = 48, Height = 48, Background = Brushes.Transparent, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+			var img = new Image { Stretch = Stretch.Uniform };
+			if (!string.IsNullOrWhiteSpace(info.IconName))
+			{
+				try
+				{
+					var path = System.IO.Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "assets", "blocks", info.IconName);
+					if (System.IO.File.Exists(path))
+					{
+						var bmp = new BitmapImage();
+						bmp.BeginInit();
+						bmp.UriSource = new System.Uri(path, System.UriKind.Absolute);
+						bmp.CacheOption = BitmapCacheOption.OnLoad;
+						bmp.EndInit();
+						bmp.Freeze();
+						img.Source = bmp;
+					}
+				}
+				catch { }
+			}
+			iconHost.Child = img;
+			Grid.SetColumn(iconHost, 0);
+			grid.Children.Add(iconHost);
 
-            // Info
-            var infoPanel = new StackPanel();
-            infoPanel.Children.Add(new TextBlock { Text = info.Name, FontSize = 16, Foreground = Brushes.White });
-            infoPanel.Children.Add(new TextBlock { Text = $"Version: {info.Version}", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 4, 0, 0) });
-            var ts = info.Timestamp;
-            var tsText = ts.HasValue ? $"Last played: {ts.Value.ToLocalTime():g}" : "Last played: never";
-            infoPanel.Children.Add(new TextBlock { Text = tsText, FontSize = 11, Foreground = Brushes.Gray, Margin = new Thickness(0, 2, 0, 0) });
-            Grid.SetColumn(infoPanel, 1);
-            grid.Children.Add(infoPanel);
+			// Info
+			var infoPanel = new StackPanel();
+			infoPanel.Children.Add(new TextBlock { Text = info.Name, FontSize = 16, Foreground = Brushes.White });
+			infoPanel.Children.Add(new TextBlock { Text = $"Version: {info.Version}", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 4, 0, 0) });
+			var ts = info.Timestamp;
+			var tsText = ts.HasValue ? $"Last played: {ts.Value.ToLocalTime():g}" : "Last played: never";
+			infoPanel.Children.Add(new TextBlock { Text = tsText, FontSize = 11, Foreground = Brushes.Gray, Margin = new Thickness(0, 2, 0, 0) });
+			Grid.SetColumn(infoPanel, 1);
+			grid.Children.Add(infoPanel);
 
-            // Actions (hover)
-            var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
+			// Actions (hover)
+			var actions = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
 
-            var playBtn = new Button
-            {
-                Content = "Play",
-                Padding = new Thickness(15, 6, 15, 6),
-                Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"),
-                Foreground = Brushes.White,
-                BorderThickness = new Thickness(0),
-                Margin = new Thickness(0, 0, 8, 0)
-            };
-            playBtn.Click += (s, e) => { LaunchInstallation(info); };
-            actions.Children.Add(playBtn);
+			var playBtn = new Button
+			{
+				Content = "Play",
+				Padding = new Thickness(15, 6, 15, 6),
+				Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"),
+				Foreground = Brushes.White,
+				BorderThickness = new Thickness(0),
+				Margin = new Thickness(0, 0, 8, 0)
+			};
+			playBtn.Click += (s, e) => { LaunchInstallation(info); };
+			actions.Children.Add(playBtn);
 
-            // Folder glyph (unchanged)
-            var folderBtn = new Button
-            {
-                Padding = new Thickness(10, 6, 10, 6),
-                Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
-                Foreground = Brushes.White,
-                BorderThickness = new Thickness(0),
-                Margin = new Thickness(0, 0, 8, 0),
-                ToolTip = "Open folder"
-            };
-            folderBtn.Content = new TextBlock { Text = "\uE8B7", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
-            folderBtn.Click += (s, e) =>
-            {
-                try
-                {
-                    string? path;
-                    var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
-                    if (isSteamPseudo)
-                    {
-                        path = LauncherSettings.Current.GetSteamPathForGame(info.GameKey) ?? SteamLocator.FindGamePath(InstallationService.GetAppId(info.GameKey));
-                    }
-                    else
-                    {
-                        path = string.IsNullOrEmpty(info.RootPath) ? InstallationService.GetInstallationsPath(info.GameKey) : info.RootPath;
-                    }
+			// Folder glyph (unchanged)
+			var folderBtn = new Button
+			{
+				Padding = new Thickness(10, 6, 10, 6),
+				Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+				Foreground = Brushes.White,
+				BorderThickness = new Thickness(0),
+				Margin = new Thickness(0, 0, 8, 0),
+				ToolTip = "Open folder"
+			};
+			folderBtn.Content = new TextBlock { Text = "\uE8B7", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
+			folderBtn.Click += (s, e) =>
+			{
+				try
+				{
+					string? path;
+					var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
+					if (isSteamPseudo)
+					{
+						path = LauncherSettings.Current.GetSteamPathForGame(info.GameKey) ?? SteamLocator.FindGamePath(InstallationService.GetAppId(info.GameKey));
+					}
+					else
+					{
+						path = string.IsNullOrEmpty(info.RootPath) ? InstallationService.GetInstallationsPath(info.GameKey) : info.RootPath;
+					}
 
-                    if (!string.IsNullOrWhiteSpace(path) && System.IO.Directory.Exists(path))
-                        Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
-                }
-                catch { }
-            };
-            actions.Children.Add(folderBtn);
+					if (!string.IsNullOrWhiteSpace(path) && System.IO.Directory.Exists(path))
+						Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+				}
+				catch { }
+			};
+			actions.Children.Add(folderBtn);
 
-            // More menu (unchanged)
-            bool isDefaultSteam = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
-            if (!isDefaultSteam)
-            {
-                var menuToggle = new ToggleButton
-                {
-                    Padding = new Thickness(10, 6, 10, 6),
-                    Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
-                    Foreground = Brushes.White,
-                    BorderThickness = new Thickness(0),
-                    ToolTip = "More"
-                };
-                menuToggle.Content = new TextBlock { Text = "\uE712", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
-                var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
-                var menuStack = new StackPanel();
-                menuStack.Children.Add(CreateMenuItem("Edit", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; ShowEditDialog(info); }));
-                menuStack.Children.Add(CreateMenuItem("Duplicate", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; var dup = InstallationService.DuplicateInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
-                menuStack.Children.Add(CreateMenuItem("Delete", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; InstallationService.DeleteInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
-                menuPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)), BorderThickness = new Thickness(1), Child = menuStack };
-                menuToggle.Checked += (s, e) => menuPopup.IsOpen = true;
-                menuToggle.Unchecked += (s, e) => menuPopup.IsOpen = false;
-                menuPopup.Closed += (s, e) => menuToggle.IsChecked = false;
-                actions.Children.Add(menuToggle);
-            }
+			// More menu (unchanged)
+			bool isDefaultSteam = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
+			if (!isDefaultSteam)
+			{
+				var menuToggle = new ToggleButton
+				{
+					Padding = new Thickness(10, 6, 10, 6),
+					Background = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+					Foreground = Brushes.White,
+					BorderThickness = new Thickness(0),
+					ToolTip = "More"
+				};
+				menuToggle.Content = new TextBlock { Text = "\uE712", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 14, Foreground = Brushes.White };
+				var menuPopup = new Popup { PlacementTarget = menuToggle, Placement = PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true };
+				var menuStack = new StackPanel();
+				menuStack.Children.Add(CreateMenuItem("Edit", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; ShowEditDialog(info); }));
+				menuStack.Children.Add(CreateMenuItem("Duplicate", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; var dup = InstallationService.DuplicateInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
+				menuStack.Children.Add(CreateMenuItem("Delete", () => { menuPopup.IsOpen = false; menuToggle.IsChecked = false; InstallationService.DeleteInstallation(info); RefreshList(); if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu(); }));
+				menuPopup.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(50, 50, 50)), BorderBrush = new SolidColorBrush(Color.FromRgb(80, 80, 80)), BorderThickness = new Thickness(1), Child = menuStack };
+				menuToggle.Checked += (s, e) => menuPopup.IsOpen = true;
+				menuToggle.Unchecked += (s, e) => menuPopup.IsOpen = false;
+				menuPopup.Closed += (s, e) => menuToggle.IsChecked = false;
+				actions.Children.Add(menuToggle);
+			}
 
-            Grid.SetColumn(actions, 2);
-            grid.Children.Add(actions);
+			Grid.SetColumn(actions, 2);
+			grid.Children.Add(actions);
 
-            border.MouseEnter += (s, e) => actions.Visibility = Visibility.Visible;
-            border.MouseLeave += (s, e) => { actions.Visibility = Visibility.Collapsed; };
+			border.MouseEnter += (s, e) => actions.Visibility = Visibility.Visible;
+			border.MouseLeave += (s, e) => { actions.Visibility = Visibility.Collapsed; };
 
-            border.Child = grid;
-            panel.Children.Add(border);
-        }
+			border.Child = grid;
+			panel.Children.Add(border);
+		}
 
-        private void ShowEditDialog(InstallationInfo info)
-        {
-            // Guard: do not allow editing the default Steam installation
-            if (string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase))
-                return;
+		private void ShowEditDialog(InstallationInfo info)
+		{
+			// Guard: do not allow editing the default Steam installation
+			if (string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase))
+				return;
 
-            var dlg = new Window
-            {
-                Title = "Edit installation",
-                Owner = Application.Current.MainWindow,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                SizeToContent = SizeToContent.WidthAndHeight,
-                Background = new SolidColorBrush(Color.FromRgb(27, 27, 27)),
-                Foreground = Brushes.White,
-                ResizeMode = ResizeMode.NoResize
-            };
+			var dlg = new Window
+			{
+				Title = "Edit installation",
+				Owner = Application.Current.MainWindow,
+				WindowStartupLocation = WindowStartupLocation.CenterOwner,
+				SizeToContent = SizeToContent.WidthAndHeight,
+				Background = new SolidColorBrush(Color.FromRgb(27, 27, 27)),
+				Foreground = Brushes.White,
+				ResizeMode = ResizeMode.NoResize
+			};
 
-            var panel = new StackPanel { Margin = new Thickness(20) };
+			var panel = new StackPanel { Margin = new Thickness(20) };
 
-            // Icon picker identical to create
-            var iconArea = new Grid { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 12) };
-            iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+			// Icon picker identical to create
+			var iconArea = new Grid { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 12) };
+			iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+			iconArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            var currentIcon = new Image { Width = 56, Height = 56, Stretch = Stretch.Uniform };
-            string? selectedIcon = info.IconName;
-            SetIconImage(currentIcon, selectedIcon);
-            Grid.SetColumn(currentIcon, 0);
-            iconArea.Children.Add(currentIcon);
+			var currentIcon = new Image { Width = 56, Height = 56, Stretch = Stretch.Uniform };
+			string? selectedIcon = info.IconName;
+			SetIconImage(currentIcon, selectedIcon);
+			Grid.SetColumn(currentIcon, 0);
+			iconArea.Children.Add(currentIcon);
 
-            var caretToggle = new ToggleButton
-            {
-                Margin = new Thickness(8, 0, 0, 0),
-                Padding = new Thickness(6, 0, 6, 0),
-                Background = Brushes.Transparent,
-                Foreground = Brushes.White,
-                BorderBrush = new SolidColorBrush(Color.FromRgb(64, 64, 64)),
-                BorderThickness = new Thickness(1),
-                VerticalAlignment = VerticalAlignment.Center,
-                FocusVisualStyle = null,
-                FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                Content = "\uE70D"
-            };
-            Grid.SetColumn(caretToggle, 1);
-            iconArea.Children.Add(caretToggle);
+			var caretToggle = new ToggleButton
+			{
+				Margin = new Thickness(8, 0, 0, 0),
+				Padding = new Thickness(6, 0, 6, 0),
+				Background = Brushes.Transparent,
+				Foreground = Brushes.White,
+				BorderBrush = new SolidColorBrush(Color.FromRgb(64, 64, 64)),
+				BorderThickness = new Thickness(1),
+				VerticalAlignment = VerticalAlignment.Center,
+				FocusVisualStyle = null,
+				FontFamily = new FontFamily("Segoe MDL2 Assets"),
+				Content = "\uE70D"
+			};
+			Grid.SetColumn(caretToggle, 1);
+			iconArea.Children.Add(caretToggle);
 
-            var iconPopup = new Popup
-            {
-                PlacementTarget = caretToggle,
-                Placement = PlacementMode.Bottom,
-                StaysOpen = false,
-                AllowsTransparency = true
-            };
-            var iconScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 260, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)) };
-            var iconWrap = new WrapPanel { Margin = new Thickness(8) };
-            foreach (var ic in InstallationService.LoadAvailableIcons())
-            {
-                var im = new Image { Width = 40, Height = 40, Stretch = Stretch.Uniform, Margin = new Thickness(4) };
-                SetIconImage(im, ic);
-                var b = new Button { Content = im, Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = Brushes.Transparent };
-                var chosen = ic;
-                b.Click += (_, __) => { selectedIcon = chosen; SetIconImage(currentIcon, selectedIcon); iconPopup.IsOpen = false; caretToggle.IsChecked = false; };
-                iconWrap.Children.Add(b);
-            }
-            iconScroll.Content = iconWrap;
-            iconPopup.Child = new Border { Width = 420, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), Child = iconScroll };
-            caretToggle.Checked += (s, e) => iconPopup.IsOpen = true;
-            caretToggle.Unchecked += (s, e) => iconPopup.IsOpen = false;
-            iconPopup.Closed += (s, e) => caretToggle.IsChecked = false;
+			var iconPopup = new Popup
+			{
+				PlacementTarget = caretToggle,
+				Placement = PlacementMode.Bottom,
+				StaysOpen = false,
+				AllowsTransparency = true
+			};
+			var iconScroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = 260, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)) };
+			var iconWrap = new WrapPanel { Margin = new Thickness(8) };
+			foreach (var ic in InstallationService.LoadAvailableIcons())
+			{
+				var im = new Image { Width = 40, Height = 40, Stretch = Stretch.Uniform, Margin = new Thickness(4) };
+				SetIconImage(im, ic);
+				var b = new Button { Content = im, Padding = new Thickness(0), BorderThickness = new Thickness(0), Background = Brushes.Transparent };
+				var chosen = ic;
+				b.Click += (_, __) => { selectedIcon = chosen; SetIconImage(currentIcon, selectedIcon); iconPopup.IsOpen = false; caretToggle.IsChecked = false; };
+				iconWrap.Children.Add(b);
+			}
+			iconScroll.Content = iconWrap;
+			iconPopup.Child = new Border { Width = 420, Background = new SolidColorBrush(Color.FromRgb(26, 26, 26)), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.FromRgb(48, 48, 48)), Child = iconScroll };
+			caretToggle.Checked += (s, e) => iconPopup.IsOpen = true;
+			caretToggle.Unchecked += (s, e) => iconPopup.IsOpen = false;
+			iconPopup.Closed += (s, e) => caretToggle.IsChecked = false;
 
-            panel.Children.Add(iconArea);
+			panel.Children.Add(iconArea);
 
-            // Name
-            panel.Children.Add(new TextBlock { Text = "Name", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
-            var nameBox = new TextBox { Width = 360, Text = info.Name };
-            panel.Children.Add(nameBox);
+			// Name
+			panel.Children.Add(new TextBlock { Text = "Name", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 6) });
+			var nameBox = new TextBox { Width = 360, Text = info.Name };
+			panel.Children.Add(nameBox);
 
-            // Version dropdown from versions folder, add Steam Version only if EXE exists
-            panel.Children.Add(new TextBlock { Text = "Version", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 6) });
-            var versionCombo = new ComboBox { Width = 360 };
-            var steamExe = InstallationService.GetSteamExePath(_gameKey);
-            if (!string.IsNullOrWhiteSpace(steamExe))
-            {
-                versionCombo.Items.Add("Steam Version");
-            }
-            foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
-            {
-                versionCombo.Items.Add(v);
-            }
-            int idx = -1;
-            for (int i = 0; i < versionCombo.Items.Count; i++)
-            {
-                if (string.Equals(versionCombo.Items[i]?.ToString(), info.Version, System.StringComparison.OrdinalIgnoreCase)) { idx = i; break; }
-            }
-            versionCombo.SelectedIndex = idx >= 0 ? idx : (versionCombo.Items.Count > 0 ? 0 : -1);
-            panel.Children.Add(versionCombo);
+			// Version dropdown from versions folder, add Steam Version only if EXE exists
+			panel.Children.Add(new TextBlock { Text = "Version", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 6) });
+			var versionCombo = new ComboBox { Width = 360 };
+			var steamExe = InstallationService.GetSteamExePath(_gameKey);
+			if (!string.IsNullOrWhiteSpace(steamExe))
+			{
+				versionCombo.Items.Add("Steam Version");
+			}
+			foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
+			{
+				versionCombo.Items.Add(v);
+			}
+			int idx = -1;
+			for (int i = 0; i < versionCombo.Items.Count; i++)
+			{
+				if (string.Equals(versionCombo.Items[i]?.ToString(), info.Version, System.StringComparison.OrdinalIgnoreCase)) { idx = i; break; }
+			}
+			versionCombo.SelectedIndex = idx >= 0 ? idx : (versionCombo.Items.Count > 0 ? 0 : -1);
+			panel.Children.Add(versionCombo);
 
-            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
-            var cancel = new Button { Content = "Cancel", Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 6, 14, 6) };
-            cancel.Click += (s, e) => dlg.Close();
-            var save = new Button { Content = "Save", Padding = new Thickness(14, 6, 14, 6), Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"), Foreground = Brushes.White, BorderThickness = new Thickness(0) };
-            save.Click += (s, e) =>
-            {
-                var newName = string.IsNullOrWhiteSpace(nameBox.Text) ? info.Name : nameBox.Text.Trim();
-                var newVersion = versionCombo.SelectedItem?.ToString() ?? info.Version;
+			var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
+			var cancel = new Button { Content = "Cancel", Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 6, 14, 6) };
+			cancel.Click += (s, e) => dlg.Close();
+			var save = new Button { Content = "Save", Padding = new Thickness(14, 6, 14, 6), Background = (Brush)Application.Current.MainWindow.FindResource("AccentBrush"), Foreground = Brushes.White, BorderThickness = new Thickness(0) };
+			save.Click += (s, e) =>
+			{
+				var newName = string.IsNullOrWhiteSpace(nameBox.Text) ? info.Name : nameBox.Text.Trim();
+				var newVersion = versionCombo.SelectedItem?.ToString() ?? info.Version;
 
-                var updated = info;
-                if (!string.Equals(newName, info.Name, System.StringComparison.Ordinal))
-                {
-                    updated = InstallationService.RenameInstallation(updated, newName);
-                }
-                if (!string.Equals(selectedIcon, updated.IconName, System.StringComparison.Ordinal))
-                {
-                    InstallationService.UpdateInstallationIcon(updated, selectedIcon);
-                    updated.IconName = selectedIcon;
-                }
-                if (!string.Equals(newVersion, updated.Version, System.StringComparison.Ordinal))
-                {
-                    InstallationService.UpdateInstallationVersion(updated, newVersion);
-                    updated.Version = newVersion;
-                }
+				var updated = info;
+				if (!string.Equals(newName, info.Name, System.StringComparison.Ordinal))
+				{
+					updated = InstallationService.RenameInstallation(updated, newName);
+				}
+				if (!string.Equals(selectedIcon, updated.IconName, System.StringComparison.Ordinal))
+				{
+					InstallationService.UpdateInstallationIcon(updated, selectedIcon);
+					updated.IconName = selectedIcon;
+				}
+				if (!string.Equals(newVersion, updated.Version, System.StringComparison.Ordinal))
+				{
+					InstallationService.UpdateInstallationVersion(updated, newVersion);
+					updated.Version = newVersion;
+				}
 
-                dlg.Close();
-                RefreshList();
-                if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu();
-            };
-            buttons.Children.Add(cancel);
-            buttons.Children.Add(save);
-            panel.Children.Add(buttons);
+				dlg.Close();
+				RefreshList();
+				if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu();
+			};
+			buttons.Children.Add(cancel);
+			buttons.Children.Add(save);
+			panel.Children.Add(buttons);
 
-            dlg.Content = panel;
-            dlg.ShowDialog();
-        }
+			dlg.Content = panel;
+			dlg.ShowDialog();
+		}
 
-        private UIElement CreateMenuItem(string text, System.Action onClick)
-        {
-            var btn = new Button
-            {
-                Content = text,
-                Padding = new Thickness(12, 8, 12, 8),
-                Background = Brushes.Transparent,
-                Foreground = Brushes.White,
-                BorderThickness = new Thickness(0),
-                HorizontalContentAlignment = HorizontalAlignment.Left
-            };
-            btn.Click += (s, e) => onClick();
-            btn.MouseEnter += (s, e) => btn.Background = new SolidColorBrush(Color.FromRgb(70, 70, 70));
-            btn.MouseLeave += (s, e) => btn.Background = Brushes.Transparent;
-            return btn;
-        }
+		private UIElement CreateMenuItem(string text, System.Action onClick)
+		{
+			var btn = new Button
+			{
+				Content = text,
+				Padding = new Thickness(12, 8, 12, 8),
+				Background = Brushes.Transparent,
+				Foreground = Brushes.White,
+				BorderThickness = new Thickness(0),
+				HorizontalContentAlignment = HorizontalAlignment.Left
+			};
+			btn.Click += (s, e) => onClick();
+			btn.MouseEnter += (s, e) => btn.Background = new SolidColorBrush(Color.FromRgb(70, 70, 70));
+			btn.MouseLeave += (s, e) => btn.Background = Brushes.Transparent;
+			return btn;
+		}
 
-        private void LaunchInstallation(InstallationInfo info)
-        {
-            try
-            {
-                var exeName = info.GameKey == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
-                string? gameDir;
-                var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
-                if (isSteamPseudo)
-                {
-                    gameDir = LauncherSettings.Current.GetSteamPathForGame(info.GameKey);
-                    if (string.IsNullOrWhiteSpace(gameDir))
-                    {
-                        gameDir = SteamLocator.FindGamePath(InstallationService.GetAppId(info.GameKey));
-                    }
-                    if (string.IsNullOrWhiteSpace(gameDir))
-                    {
-                        gameDir = InstallationService.GetVersionsPath(info.GameKey);
-                    }
-                }
-                else
-                {
-                    gameDir = System.IO.Path.Combine(info.RootPath, "Game");
-                }
+		private void LaunchInstallation(InstallationInfo info)
+		{
+			try
+			{
+				var exeName = info.GameKey == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
+				string? gameDir;
+				var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
+				if (isSteamPseudo)
+				{
+					gameDir = LauncherSettings.Current.GetSteamPathForGame(info.GameKey);
+					if (string.IsNullOrWhiteSpace(gameDir))
+					{
+						gameDir = SteamLocator.FindGamePath(InstallationService.GetAppId(info.GameKey));
+					}
+					if (string.IsNullOrWhiteSpace(gameDir))
+					{
+						gameDir = InstallationService.GetVersionsPath(info.GameKey);
+					}
+				}
+				else
+				{
+					gameDir = System.IO.Path.Combine(info.RootPath, "Game");
+				}
 
-                InstallationService.EnsureSteamAppId(info.GameKey, gameDir!);
-                var exePath = System.IO.Path.Combine(gameDir!, exeName);
-                if (System.IO.File.Exists(exePath))
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = exePath,
-                        WorkingDirectory = gameDir,
-                        UseShellExecute = true
-                    });
+				InstallationService.EnsureSteamAppId(info.GameKey, gameDir!);
+				var exePath = System.IO.Path.Combine(gameDir!, exeName);
+				if (System.IO.File.Exists(exePath))
+				{
+					Process.Start(new ProcessStartInfo
+					{
+						FileName = exePath,
+						WorkingDirectory = gameDir,
+						UseShellExecute = true
+					});
 
-                    // Update timestamp for this installation or steam
-                    if (isSteamPseudo)
-                    {
-                        InstallationService.MarkSteamLaunched(info.GameKey);
-                    }
-                    else if (!string.IsNullOrWhiteSpace(info.RootPath))
-                    {
-                        InstallationService.MarkInstallationLaunched(info);
-                    }
+					// Update timestamp for this installation or steam
+					if (isSteamPseudo)
+					{
+						InstallationService.MarkSteamLaunched(info.GameKey);
+					}
+					else if (!string.IsNullOrWhiteSpace(info.RootPath))
+					{
+						InstallationService.MarkInstallationLaunched(info);
+					}
 
-                    // Immediately refresh list ordering and details
-                    RefreshList();
-                    if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu();
+					// Immediately refresh list ordering and details
+					RefreshList();
+					if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu();
 
-                    if (LauncherSettings.Current.CloseOnLaunch)
-                    {
-                        Application.Current.MainWindow?.Close();
-                    }
-                }
-                else
-                {
-                    MessageBox.Show($"Executable not found: {exePath}", "CastleMiner Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-            catch
-            {
-                MessageBox.Show("Failed to launch installation.", "CastleMiner Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-    }
+					if (LauncherSettings.Current.CloseOnLaunch)
+					{
+						Application.Current.MainWindow?.Close();
+					}
+				}
+				else
+				{
+					MessageBox.Show($"Executable not found: {exePath}", "CastleMiner Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+				}
+			}
+			catch
+			{
+				MessageBox.Show("Failed to launch installation.", "CastleMiner Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+		}
+	}
 }
