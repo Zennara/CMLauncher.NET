@@ -60,22 +60,56 @@ namespace CMLauncher
             };
         }
 
+        private Button CreateDisabledInstallMenuLabel(string text)
+        {
+            var button = new Button
+            {
+                Style = (Style)FindResource("InstallMenuItemStyle"),
+                IsEnabled = false,
+                Tag = null,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                Opacity = 0.7
+            };
+            var txt = new TextBlock { Text = text, Foreground = new SolidColorBrush(Color.FromRgb(180, 180, 180)) };
+            button.Content = txt;
+            return button;
+        }
+
         private void LoadInstallationsIntoPopup(string gameKey)
         {
             InstallItemsPanel.Children.Clear();
 
-            // Determine Steam version from exe if available
-            string steamVersion = InstallationService.GetSteamExeVersion(gameKey) ?? "Steam Version";
-            InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam Installation", steamVersion, SteamIconName));
+            bool any = false;
+
+            // Optionally add Steam entry if EXE present
+            var steamExe = InstallationService.GetSteamExePath(gameKey);
+            if (!string.IsNullOrWhiteSpace(steamExe))
+            {
+                string steamVersion = InstallationService.GetSteamExeVersion(gameKey) ?? "Steam Version";
+                InstallItemsPanel.Children.Add(CreateInstallMenuButton("Steam Installation", steamVersion, SteamIconName));
+                any = true;
+            }
 
             var installs = InstallationService.LoadInstallations(gameKey);
             foreach (var inst in installs)
             {
                 InstallItemsPanel.Children.Add(CreateInstallMenuButton(inst.Name, inst.Version, inst.IconName));
+                any = true;
             }
 
-            // Select the first item by default (Steam)
-            var firstButton = InstallItemsPanel.Children.OfType<Button>().FirstOrDefault();
+            if (!any)
+            {
+                // Show placeholder and update selected labels
+                InstallItemsPanel.Children.Add(CreateDisabledInstallMenuLabel("No Installations"));
+                SelectedInstallName.Text = "No Installations";
+                SelectedInstallVersion.Text = string.Empty;
+                UpdateSelectedIcon(null);
+                _selectedInstallButton = null;
+                return;
+            }
+
+            // Select first item if any
+            var firstButton = InstallItemsPanel.Children.OfType<Button>().FirstOrDefault(b => b.IsEnabled);
             if (firstButton != null)
             {
                 if (_selectedInstallButton != null)
@@ -378,7 +412,11 @@ namespace CMLauncher
             {
                 var name = SelectedInstallName.Text?.Trim();
                 var version = SelectedInstallVersion.Text?.Trim();
-                if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("No installation selected."); return; }
+                if (string.IsNullOrWhiteSpace(name) || string.Equals(name, "No Installations", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show("No installation available.");
+                    return;
+                }
 
                 bool launched = false;
 

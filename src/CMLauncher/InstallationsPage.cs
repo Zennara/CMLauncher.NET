@@ -159,12 +159,18 @@ namespace CMLauncher
 
             panel.Children.Add(new TextBlock { Text = "Version", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 6) });
             var versionCombo = new ComboBox { Width = 360 };
-            versionCombo.Items.Add("Steam Version");
+
+            // Only add Steam Version if EXE exists
+            var steamExe = InstallationService.GetSteamExePath(_gameKey);
+            if (!string.IsNullOrWhiteSpace(steamExe))
+            {
+                versionCombo.Items.Add("Steam Version");
+            }
             foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
             {
                 versionCombo.Items.Add(v);
             }
-            versionCombo.SelectedIndex = 0;
+            versionCombo.SelectedIndex = versionCombo.Items.Count > 0 ? 0 : -1;
             panel.Children.Add(versionCombo);
 
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
@@ -174,7 +180,8 @@ namespace CMLauncher
             create.Click += (s, e) =>
             {
                 var name = string.IsNullOrWhiteSpace(nameBox.Text) ? "Unnamed installation" : nameBox.Text.Trim();
-                var version = versionCombo.SelectedItem?.ToString() ?? "Steam Version";
+                var version = versionCombo.SelectedItem?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(version)) { MessageBox.Show("Please select a version."); return; }
                 InstallationService.CreateInstallation(_gameKey, name, version, selectedIcon);
                 dlg.Close();
                 RefreshList();
@@ -217,14 +224,22 @@ namespace CMLauncher
         {
             _listHost.Children.Clear();
 
-            // Steam pseudo-installation first, with real version if available
-            string steamVersion = InstallationService.GetSteamExeVersion(_gameKey) ?? "Steam Version";
-            AddInstallationItem(_listHost, new InstallationInfo { GameKey = _gameKey, Name = "Steam Installation", Version = steamVersion, IconName = SteamIconName, RootPath = "" }, true);
+            bool firstAdded = false;
+
+            // Add Steam pseudo-installation only if EXE present
+            var steamExe = InstallationService.GetSteamExePath(_gameKey);
+            if (!string.IsNullOrWhiteSpace(steamExe))
+            {
+                string steamVersion = InstallationService.GetSteamExeVersion(_gameKey) ?? "Steam Version";
+                AddInstallationItem(_listHost, new InstallationInfo { GameKey = _gameKey, Name = "Steam Installation", Version = steamVersion, IconName = SteamIconName, RootPath = "" }, isSelected: true);
+                firstAdded = true;
+            }
 
             var installs = InstallationService.LoadInstallations(_gameKey);
             foreach (var inst in installs)
             {
-                AddInstallationItem(_listHost, inst, false);
+                AddInstallationItem(_listHost, inst, isSelected: !firstAdded);
+                firstAdded = true;
             }
         }
         
@@ -436,21 +451,24 @@ namespace CMLauncher
             var nameBox = new TextBox { Width = 360, Text = info.Name };
             panel.Children.Add(nameBox);
 
-            // Version dropdown from versions folder
+            // Version dropdown from versions folder, add Steam Version only if EXE exists
             panel.Children.Add(new TextBlock { Text = "Version", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 6) });
             var versionCombo = new ComboBox { Width = 360 };
-            versionCombo.Items.Add("Steam Version");
+            var steamExe = InstallationService.GetSteamExePath(_gameKey);
+            if (!string.IsNullOrWhiteSpace(steamExe))
+            {
+                versionCombo.Items.Add("Steam Version");
+            }
             foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
             {
                 versionCombo.Items.Add(v);
             }
-            // Select current version if present
             int idx = -1;
             for (int i = 0; i < versionCombo.Items.Count; i++)
             {
                 if (string.Equals(versionCombo.Items[i]?.ToString(), info.Version, System.StringComparison.OrdinalIgnoreCase)) { idx = i; break; }
             }
-            versionCombo.SelectedIndex = idx >= 0 ? idx : 0;
+            versionCombo.SelectedIndex = idx >= 0 ? idx : (versionCombo.Items.Count > 0 ? 0 : -1);
             panel.Children.Add(versionCombo);
 
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
