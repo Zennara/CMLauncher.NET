@@ -20,6 +20,9 @@
 		<FileVersion>0.1.0.0</FileVersion>
 		<InformationalVersion>0.1.0-alpha</InformationalVersion>
 
+		<!-- Manifest version defaults to project version -->
+		<ManifestVersion Condition="'$(ManifestVersion)' == ''">$(Version)</ManifestVersion>
+
 		<!-- Publish settings -->
 		<PublishTrimmed>false</PublishTrimmed>
 		<!-- WPF trimming not supported -->
@@ -69,5 +72,16 @@
 			<CopyToPublishDirectory>Never</CopyToPublishDirectory>
 		</None>
 	</ItemGroup>
+
+	<!-- Normalize PublishDir to avoid trailing backslash breaking cmd.exe quoting -->
+	<PropertyGroup>
+		<PublishDirNormalized>$([System.String]::Copy('$(PublishDir)').TrimEnd('\'))</PublishDirNormalized>
+	</PropertyGroup>
+
+	<!-- Generate manifest.json after publish using PowerShell script -->
+	<Target Name="GenerateManifest" AfterTargets="Publish">
+		<Message Text="Generating manifest.json in $(PublishDirNormalized) using version $(ManifestVersion)" Importance="High" />
+		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\generate-manifest.ps1&quot; -Directory &quot;$(PublishDirNormalized)&quot; -Version &quot;$(ManifestVersion)&quot;" />
+	</Target>
 
 </Project>
