@@ -81,8 +81,8 @@
 
 	<!-- Generate manifest.json after publish using PowerShell script, then zip and clean using a dedicated script -->
 	<Target Name="GenerateManifest" AfterTargets="Publish">
-		<Message Text="Generating manifest.json in $(PublishDirNormalized) using version $(ManifestVersion)" Importance="High" />
-		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\generate-manifest.ps1&quot; -Directory &quot;$(PublishDirNormalized)&quot; -Version &quot;$(ManifestVersion)&quot;" />
+		<Message Text="Generating manifest.json in $(PublishDirNormalized) using version $(InformationalVersion)" Importance="High" />
+		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\generate-manifest.ps1&quot; -Directory &quot;$(PublishDirNormalized)&quot; -Version &quot;$(InformationalVersion)&quot;" />
 
 		<Message Text="Packing files into $(ZipFileName) (excluding manifest.json) and cleaning folder..." Importance="High" />
 		<Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\..\scripts\zip-publish.ps1&quot; -Directory &quot;$(PublishDirNormalized)&quot; -ZipName &quot;$(ZipFileName)&quot;" />
