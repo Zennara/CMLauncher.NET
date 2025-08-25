@@ -9,6 +9,10 @@ namespace CMLauncher
 		public string? SteamPathCMZ { get; set; }
 		public string? SteamPathCMW { get; set; }
 
+		// Remember last selected installation per game (store the display name e.g., "Steam Installation" or custom name)
+		public string? LastSelectedCMZ { get; set; }
+		public string? LastSelectedCMW { get; set; }
+
 		private static LauncherSettings? _current;
 		public static LauncherSettings Current
 		{
@@ -58,6 +62,21 @@ namespace CMLauncher
 		{
 			if (string.Equals(gameKey, InstallationService.CMWKey, StringComparison.OrdinalIgnoreCase)) return SteamPathCMW;
 			return SteamPathCMZ;
+		}
+
+		public string? GetLastSelectedInstallation(string gameKey)
+		{
+			return string.Equals(gameKey, InstallationService.CMWKey, System.StringComparison.OrdinalIgnoreCase)
+				? LastSelectedCMW
+				: LastSelectedCMZ;
+		}
+
+		public void SetLastSelectedInstallation(string gameKey, string? name)
+		{
+			if (string.Equals(gameKey, InstallationService.CMWKey, System.StringComparison.OrdinalIgnoreCase))
+				LastSelectedCMW = name;
+			else
+				LastSelectedCMZ = name;
 		}
 	}
 }

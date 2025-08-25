@@ -1,5 +1,8 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -47,13 +50,13 @@ namespace CMLauncher
 
 			// Ensure required directories exist
 			InstallationService.EnsureDirectoryStructure();
-
+			
 			InstanceComboBox = FindName("InstanceComboBox") as ComboBox;
-
+			
 			NavigateToContent("CMZ");
 			LoadInstallationsIntoPopup("CMZ");
-
-			Loaded += async (s, e) =>
+			
+			Loaded += async (s, e) => 
 			{
 				try
 				{
@@ -91,7 +94,7 @@ namespace CMLauncher
 
 			bool any = false;
 
-			// Optionally add Steam entry if EXE present
+			// Build list with Steam (if present) and custom installs
 			var steamExe = InstallationService.GetSteamExePath(gameKey);
 			if (!string.IsNullOrWhiteSpace(steamExe))
 			{
@@ -128,18 +131,48 @@ namespace CMLauncher
 			SelectedInstallVersion.Visibility = Visibility.Visible;
 			SelectedInstallIcon.Visibility = Visibility.Visible;
 
-			// Select first item if any
-			var firstButton = InstallItemsPanel.Children.OfType<Button>().FirstOrDefault(b => b.IsEnabled);
-			if (firstButton != null)
+			// Try to restore last selection from settings
+			var saved = LauncherSettings.Current.GetLastSelectedInstallation(gameKey);
+			Button? toSelect = null;
+			if (!string.IsNullOrWhiteSpace(saved))
+			{
+				toSelect = FindInstallButtonByName(saved);
+			}
+
+			// If nothing saved, pick most recently played (Steam vs custom) by timestamp
+			if (toSelect == null)
+			{
+				DateTime? bestTs = null;
+				string? bestName = null;
+				var steamTs = InstallationService.GetSteamLastPlayed(gameKey);
+				if (steamTs.HasValue)
+				{
+					bestTs = steamTs; bestName = "Steam Installation";
+				}
+				foreach (var inst in installs)
+				{
+					if (inst.Timestamp.HasValue && (!bestTs.HasValue || inst.Timestamp.Value > bestTs.Value))
+					{
+						bestTs = inst.Timestamp.Value; bestName = inst.Name;
+					}
+				}
+				if (!string.IsNullOrWhiteSpace(bestName))
+					toSelect = FindInstallButtonByName(bestName);
+			}
+
+			// Fallback to first
+			toSelect ??= InstallItemsPanel.Children.OfType<Button>().FirstOrDefault(b => b.IsEnabled);
+
+			if (toSelect != null)
 			{
 				if (_selectedInstallButton != null)
 				{
 					SelectionProperties.SetIsSelected(_selectedInstallButton, false);
 				}
-				_selectedInstallButton = firstButton;
+				_selectedInstallButton = toSelect;
 				SelectionProperties.SetIsSelected(_selectedInstallButton, true);
 
-				if (firstButton.Tag is string tag)
+				if (toSelect.Tag is string tag)
 				{
 					var parts = tag.Split('|');
 					if (parts.Length >= 2)
@@ -151,6 +184,24 @@ namespace CMLauncher
 					}
 				}
 			}
+		}
+
+		private Button? FindInstallButtonByName(string name)
+		{
+			foreach (var b in InstallItemsPanel.Children.OfType<Button>())
+			{
+				if (b.Tag is string t)
+				{
+					var idx = t.IndexOf('|');
+					if (idx > 0)
+					{
+						var n = t.Substring(0, idx);
+						if (string.Equals(n, name, StringComparison.OrdinalIgnoreCase))
+							return b;
+					}
+				}
+			}
+			return null;
 		}
 
 		private Button CreateInstallMenuButton(String name, String version, String? iconName)
@@ -362,9 +413,9 @@ namespace CMLauncher
 			}
 
 			// 1) Application resource
-			if (SetFromUri($"pack://application:,,,/{relPath}")) return true;
+			if (SetFromUri($"pack://application:,,,/ {relPath}")) return true;
 			// 2) Site of origin
-			if (SetFromUri($"pack://siteoforigin:,,,/{relPath}")) return true;
+			if (SetFromUri($"pack://siteoforigin:,,,/ {relPath}")) return true;
 			// 3) Local disk
 			var diskPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relPath.Replace('/', Path.DirectorySeparatorChar));
 			if (File.Exists(diskPath) && SetFromUri(diskPath)) return true;
@@ -449,14 +500,32 @@ namespace CMLauncher
 
 		private void PostLaunchRefresh()
 		{
-			// Refresh bottom-left selector
+			// Do not override current dropdown selection; only refresh the menu items
+			var currentName = SelectedInstallName.Text;
 			LoadInstallationsIntoPopup(currentSidebarSelection);
 
-			// If Installations tab is visible, refresh it too
+			// Reapply current selection if still present
+			var btn = FindInstallButtonByName(currentName);
+			if (btn != null)
+			{
+				_selectedInstallButton = btn;
+				SelectionProperties.SetIsSelected(_selectedInstallButton, true);
+			}
+
 			if (MainContentFrame.Content is InstallationsPage ip)
 			{
 				// Recreate page to ensure fresh binding and sorting
 				MainContentFrame.Navigate(new InstallationsPage(currentSidebarSelection));
+			}
+		}
+
+		private void RememberCurrentSelection()
+		{
+			var name = SelectedInstallName.Text?.Trim();
+			if (!string.IsNullOrWhiteSpace(name) && !string.Equals(name, "No Installations", StringComparison.OrdinalIgnoreCase))
+			{
+				LauncherSettings.Current.SetLastSelectedInstallation(currentSidebarSelection, name);
+				LauncherSettings.Current.Save();
 			}
 		}
 
@@ -472,7 +541,7 @@ namespace CMLauncher
 					return;
 				}
 
-				bool launched = false;
+			 bool launched = false;
 
 				if (string.Equals(name, "Steam Installation", StringComparison.OrdinalIgnoreCase))
 				{
@@ -555,6 +624,7 @@ namespace CMLauncher
 
 				if (launched)
 				{
+					RememberCurrentSelection();
 					PostLaunchRefresh();
 					if (LauncherSettings.Current.CloseOnLaunch)
 					{
@@ -580,17 +650,14 @@ namespace CMLauncher
 		{
 			if (sender is Button btn && btn.Tag is string tag)
 			{
-				// Clear previous selection visual
 				if (_selectedInstallButton != null)
 				{
 					SelectionProperties.SetIsSelected(_selectedInstallButton, false);
 				}
 
-				// Mark new selection
 				_selectedInstallButton = btn;
 				SelectionProperties.SetIsSelected(_selectedInstallButton, true);
 
-				// Update toggle texts from Tag "name|version|icon"
 				var parts = tag.Split('|');
 				if (parts.Length >= 2)
 				{
@@ -598,9 +665,12 @@ namespace CMLauncher
 					SelectedInstallVersion.Text = parts[1];
 					var iconName = parts.Length >= 3 ? parts[2] : null;
 					UpdateSelectedIcon(iconName);
+
+					// Persist last selected per game
+					LauncherSettings.Current.SetLastSelectedInstallation(currentSidebarSelection, parts[0]);
+					LauncherSettings.Current.Save();
 				}
 
-				// Close popup
 				InstallToggle.IsChecked = false;
 			}
 		}
