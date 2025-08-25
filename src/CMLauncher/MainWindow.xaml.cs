@@ -380,28 +380,38 @@ namespace CMLauncher
 					WordartImage.Visibility = Visibility.Collapsed;
 					MainContentFrame.Navigate(new HomePage());
 					SetBottomPlayBarVisibility(true);
+					TabsPanel.Visibility = Visibility.Hidden;
+					EditionTitleText.Visibility = Visibility.Hidden;
 					break;
 				case "CMZ":
 					SetBackdropFor("CMZ");
 					MainContentFrame.Navigate(new ModContentPage("CMZ"));
 					SetBottomPlayBarVisibility(true);
+					TabsPanel.Visibility = Visibility.Visible;
+					EditionTitleText.Visibility = Visibility.Visible;
 					break;
 				case "CMW":
 					SetBackdropFor("CMW");
 					MainContentFrame.Navigate(new ModContentPage("CMW"));
 					SetBottomPlayBarVisibility(true);
+					TabsPanel.Visibility = Visibility.Visible;
+					EditionTitleText.Visibility = Visibility.Visible;
 					break;
 				case "Settings":
 					BackdropImage.Visibility = Visibility.Collapsed;
 					WordartImage.Visibility = Visibility.Collapsed;
 					MainContentFrame.Navigate(new SettingsPage());
 					SetBottomPlayBarVisibility(false);
+					TabsPanel.Visibility = Visibility.Hidden;
+					EditionTitleText.Visibility = Visibility.Hidden;
 					break;
 				case "Changelog":
 					BackdropImage.Visibility = Visibility.Collapsed;
 					WordartImage.Visibility = Visibility.Collapsed;
 					MainContentFrame.Navigate(new ChangelogPage());
 					SetBottomPlayBarVisibility(false);
+					TabsPanel.Visibility = Visibility.Hidden;
+					EditionTitleText.Visibility = Visibility.Hidden;
 					break;
 			}
 
