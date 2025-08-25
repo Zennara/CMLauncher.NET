@@ -18,7 +18,7 @@
 		<Copyright>© 2025 Keagan Landfried</Copyright>
 		<Version>0.1.0.0</Version>
 		<FileVersion>0.1.0.0</FileVersion>
-		<InformationalVersion>0.1.0-alpha</InformationalVersion>
+		<InformationalVersion>0.0.1.0-alpha</InformationalVersion>
 
 		<!-- Manifest version defaults to project version -->
 		<ManifestVersion Condition="'$(ManifestVersion)' == ''">$(Version)</ManifestVersion>
@@ -64,6 +64,7 @@
 	<!-- NuGet dependencies -->
 	<ItemGroup>
 		<PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
+		<PackageReference Include="AutoUpdater.NET.Official" Version="1.9.2" />
 	</ItemGroup>
 
 	<!-- Exclude any PDBs that may still exist -->

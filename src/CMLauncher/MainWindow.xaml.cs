@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Threading.Tasks;
 using Button = System.Windows.Controls.Button;
 using Image = System.Windows.Controls.Image;
 using Brush = System.Windows.Media.Brush;
@@ -45,16 +46,19 @@ namespace CMLauncher
             NavigateToContent("CMZ");
             LoadInstallationsIntoPopup("CMZ");
             
-            Loaded += (s, e) => 
+            Loaded += async (s, e) => 
             {
                 try
                 {
                     SelectSidebarButton(btnCMZ);
                     Debug.WriteLine("Successfully selected CMZ button on startup");
+
+                    // Auto-check for updates (silent if up to date)
+                    await UpdateService.CheckAndPromptAsync(this, silentIfUpToDate: true);
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"ERROR during initial button selection: {ex.Message}");
+                    Debug.WriteLine($"ERROR during initial setup: {ex.Message}");
                 }
             };
         }
