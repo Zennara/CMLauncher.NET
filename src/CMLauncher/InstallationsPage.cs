@@ -5,7 +5,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-// Aliases to avoid WinForms conflicts
 using Button = System.Windows.Controls.Button;
 using Image = System.Windows.Controls.Image;
 using Brush = System.Windows.Media.Brush;

@@ -1,37 +1,61 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>false</UseWindowsForms>
 
-  <ItemGroup>
-    <!-- logos as resources -->
-    <Resource Include="assets\logos\cmz.png" Condition="Exists('assets\\logos\\cmz.png')" />
-    <Resource Include="assets\logos\cmw.png" Condition="Exists('assets\\logos\\cmw.png')" />
-    <!-- backdrops as resources (if present) -->
-    <Resource Include="assets\backdrops\cmz-backdrop.png" Condition="Exists('assets\\backdrops\\cmz-backdrop.png')" />
-    <Resource Include="assets\backdrops\cmw-backdrop.png" Condition="Exists('assets\\backdrops\\cmw-backdrop.png')" />
-    <!-- wordarts as resources (if present) -->
-    <Resource Include="assets\wordarts\castleminerz.png" Condition="Exists('assets\\wordarts\\castleminerz.png')" />
-    <Resource Include="assets\wordarts\castleminerwarfare.png" Condition="Exists('assets\\wordarts\\castleminerwarfare.png')" />
-  </ItemGroup>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
-  <!-- Also copy all files from these folders to output so site-of-origin and disk fallbacks work -->
-  <ItemGroup>
-    <Content Include="assets\backdrops\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="assets\wordarts\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="assets\blocks\**\*.*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+		<!-- WPF doesn't support trimming; disable to avoid NETSDK1168 -->
+		<PublishTrimmed>false</PublishTrimmed>
+		<SelfContained>true</SelfContained>
+		<PublishSingleFile>true</PublishSingleFile>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+		<!-- Assembly metadata -->
+		<AssemblyTitle>CastleMiner Launcher</AssemblyTitle>
+		<Company>Zennara</Company>
+		<Product>CastleMiner Launcher</Product>
+		<Authors>Keagan Landfried</Authors>
+		<Description>Launcher to manage multiple versions and installations of CastleMiner games.</Description>
+		<Copyright>© 2025 Keagan Landfried</Copyright>
+		<Version>0.1.0.0</Version>
+		<FileVersion>0.1.0.0</FileVersion>
+		<InformationalVersion>0.1.0-alpha</InformationalVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- logos as resources -->
+		<Resource Include="assets\logos\cmz.png" Condition="Exists('assets\\logos\\cmz.png')" />
+		<Resource Include="assets\logos\cmw.png" Condition="Exists('assets\\logos\\cmw.png')" />
+		<!-- backdrops as resources (if present) -->
+		<Resource Include="assets\backdrops\cmz-backdrop.png" Condition="Exists('assets\\backdrops\\cmz-backdrop.png')" />
+		<Resource Include="assets\backdrops\cmw-backdrop.png" Condition="Exists('assets\\backdrops\\cmw-backdrop.png')" />
+		<!-- wordarts as resources (if present) -->
+		<Resource Include="assets\wordarts\castleminerz.png" Condition="Exists('assets\\wordarts\\castleminerz.png')" />
+		<Resource Include="assets\wordarts\castleminerwarfare.png" Condition="Exists('assets\\wordarts\\castleminerwarfare.png')" />
+	</ItemGroup>
+
+	<!-- Also copy all files from these folders to output so site-of-origin and disk fallbacks work -->
+	<ItemGroup>
+		<Content Include="assets\backdrops\**\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="assets\wordarts\**\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="assets\blocks\**\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
+	</ItemGroup>
 
 </Project>

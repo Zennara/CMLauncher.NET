@@ -7,7 +7,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-// Alias to avoid ambiguity with WinForms
 using Button = System.Windows.Controls.Button;
 using Image = System.Windows.Controls.Image;
 using Brush = System.Windows.Media.Brush;
@@ -143,7 +142,7 @@ namespace CMLauncher
             }
         }
 
-        private Button CreateInstallMenuButton(string name, string version, string? iconName)
+        private Button CreateInstallMenuButton(String name, String version, String? iconName)
         {
             var button = new Button
             {

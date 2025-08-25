@@ -10,6 +10,7 @@ using Color = System.Windows.Media.Color;
 using FontFamily = System.Windows.Media.FontFamily;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using VerticalAlignment = System.Windows.VerticalAlignment;
+using Ookii.Dialogs.Wpf;
 
 namespace CMLauncher
 {
@@ -84,11 +85,13 @@ namespace CMLauncher
 
         private void BrowseForFolder(TextBox target, string gameKey)
         {
-            using var dlg = new System.Windows.Forms.FolderBrowserDialog();
-            dlg.Description = "Select the Steam game install folder";
-            dlg.UseDescriptionForTitle = true;
-            var result = dlg.ShowDialog();
-            if (result == System.Windows.Forms.DialogResult.OK)
+            var dlg = new VistaFolderBrowserDialog
+            {
+                Description = "Select the Steam game install folder",
+                UseDescriptionForTitle = true,
+                ShowNewFolderButton = false
+            };
+            if (dlg.ShowDialog() == true)
             {
                 target.Text = dlg.SelectedPath;
                 if (string.Equals(gameKey, InstallationService.CMWKey))
