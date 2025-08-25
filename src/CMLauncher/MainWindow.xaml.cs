@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -37,6 +38,17 @@ namespace CMLauncher
         public MainWindow()
         {
             InitializeComponent();
+
+            // Set bottom-left app version from InformationalVersion (strip +build metadata)
+            try
+            {
+                var info = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+                           ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
+                var plusIdx = info.IndexOf('+');
+                var pretty = plusIdx >= 0 ? info.Substring(0, plusIdx) : info;
+                AppVersionText.Text = $"v{pretty}";
+            }
+            catch { /* ignore */ }
 
             // Ensure required directories exist
             InstallationService.EnsureDirectoryStructure();
