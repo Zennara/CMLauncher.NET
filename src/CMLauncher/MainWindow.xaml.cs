@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -50,13 +47,13 @@ namespace CMLauncher
 
 			// Ensure required directories exist
 			InstallationService.EnsureDirectoryStructure();
-			
+
 			InstanceComboBox = FindName("InstanceComboBox") as ComboBox;
-			
+
 			NavigateToContent("CMZ");
 			LoadInstallationsIntoPopup("CMZ");
-			
-			Loaded += async (s, e) => 
+
+			Loaded += async (s, e) =>
 			{
 				try
 				{
@@ -541,7 +538,7 @@ namespace CMLauncher
 					return;
 				}
 
-			 bool launched = false;
+				bool launched = false;
 
 				if (string.Equals(name, "Steam Installation", StringComparison.OrdinalIgnoreCase))
 				{
