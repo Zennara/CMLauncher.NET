@@ -18,7 +18,7 @@
 		<Copyright>© 2025 Keagan Landfried</Copyright>
 		<Version>0.1.0.0</Version>
 		<FileVersion>0.1.0.0</FileVersion>
-		<InformationalVersion>0.1.0.0</InformationalVersion>
+		<InformationalVersion>0.1.0.0-beta</InformationalVersion>
 
 		<!-- Manifest version defaults to project version -->
 		<ManifestVersion Condition="'$(ManifestVersion)' == ''">$(Version)</ManifestVersion>
