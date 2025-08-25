@@ -427,6 +427,19 @@ namespace CMLauncher
             }
         }
 
+        private void PostLaunchRefresh()
+        {
+            // Refresh bottom-left selector
+            LoadInstallationsIntoPopup(currentSidebarSelection);
+
+            // If Installations tab is visible, refresh it too
+            if (MainContentFrame.Content is InstallationsPage ip)
+            {
+                // Recreate page to ensure fresh binding and sorting
+                MainContentFrame.Navigate(new InstallationsPage(currentSidebarSelection));
+            }
+        }
+
         private void PlayButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -445,7 +458,6 @@ namespace CMLauncher
                 {
                     var exeName = currentSidebarSelection == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
 
-                    // Prefer user-saved path, then detected Steam, then versions
                     string? gameDir = LauncherSettings.Current.GetSteamPathForGame(currentSidebarSelection);
                     if (string.IsNullOrWhiteSpace(gameDir))
                         gameDir = SteamLocator.FindGamePath(InstallationService.GetAppId(currentSidebarSelection));
@@ -466,6 +478,7 @@ namespace CMLauncher
                     {
                         Process.Start(new ProcessStartInfo { FileName = exePath, WorkingDirectory = gameDir, UseShellExecute = true });
                         launched = true;
+                        InstallationService.MarkSteamLaunched(currentSidebarSelection);
                     }
                     else
                     {
@@ -490,8 +503,6 @@ namespace CMLauncher
                     {
                         Process.Start(new ProcessStartInfo { FileName = exePath2, WorkingDirectory = game, UseShellExecute = true });
                         launched = true;
-
-                        // Mark last launched timestamp
                         InstallationService.MarkInstallationLaunched(info);
                     }
                     else
@@ -500,9 +511,13 @@ namespace CMLauncher
                     }
                 }
 
-                if (launched && LauncherSettings.Current.CloseOnLaunch)
+                if (launched)
                 {
-                    Close();
+                    PostLaunchRefresh();
+                    if (LauncherSettings.Current.CloseOnLaunch)
+                    {
+                        Close();
+                    }
                 }
             }
             catch (Exception ex)

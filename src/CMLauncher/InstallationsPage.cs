@@ -227,18 +227,17 @@ namespace CMLauncher
 
             bool firstAdded = false;
 
-            // Add Steam pseudo-installation only if EXE present (no timestamp tracked for Steam)
             var steamExe = InstallationService.GetSteamExePath(_gameKey);
             if (!string.IsNullOrWhiteSpace(steamExe))
             {
                 string steamVersion = InstallationService.GetSteamExeVersion(_gameKey) ?? "Steam Version";
-                AddInstallationItem(_listHost, new InstallationInfo { GameKey = _gameKey, Name = "Steam Installation", Version = steamVersion, IconName = SteamIconName, RootPath = "" }, isSelected: true);
+                var steamTs = InstallationService.GetSteamLastPlayed(_gameKey);
+                var steamInfo = new InstallationInfo { GameKey = _gameKey, Name = "Steam Installation", Version = steamVersion, IconName = SteamIconName, RootPath = "", Timestamp = steamTs };
+                AddInstallationItem(_listHost, steamInfo, isSelected: true);
                 firstAdded = true;
             }
 
-            var installs = InstallationService.LoadInstallations(_gameKey);
-            // Sort by last launched (timestamp desc), then name
-            installs = installs
+            var installs = InstallationService.LoadInstallations(_gameKey)
                 .OrderByDescending(i => i.Timestamp ?? DateTime.MinValue)
                 .ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -249,7 +248,7 @@ namespace CMLauncher
                 firstAdded = true;
             }
         }
-        
+
         private void AddInstallationItem(StackPanel panel, InstallationInfo info, bool isSelected)
         {
             var border = new Border
@@ -294,12 +293,9 @@ namespace CMLauncher
             var infoPanel = new StackPanel();
             infoPanel.Children.Add(new TextBlock { Text = info.Name, FontSize = 16, Foreground = Brushes.White });
             infoPanel.Children.Add(new TextBlock { Text = $"Version: {info.Version}", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 4, 0, 0) });
-            if (!string.IsNullOrWhiteSpace(info.RootPath))
-            {
-                var ts = info.Timestamp;
-                var tsText = ts.HasValue ? $"Last played: {ts.Value.ToLocalTime():g}" : "Last played: never";
-                infoPanel.Children.Add(new TextBlock { Text = tsText, FontSize = 11, Foreground = Brushes.Gray, Margin = new Thickness(0, 2, 0, 0) });
-            }
+            var ts = info.Timestamp;
+            var tsText = ts.HasValue ? $"Last played: {ts.Value.ToLocalTime():g}" : "Last played: never";
+            infoPanel.Children.Add(new TextBlock { Text = tsText, FontSize = 11, Foreground = Brushes.Gray, Margin = new Thickness(0, 2, 0, 0) });
             Grid.SetColumn(infoPanel, 1);
             grid.Children.Add(infoPanel);
 
@@ -542,7 +538,6 @@ namespace CMLauncher
             try
             {
                 var exeName = info.GameKey == InstallationService.CMWKey ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
-
                 string? gameDir;
                 var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
                 if (isSteamPseudo)
@@ -573,11 +568,19 @@ namespace CMLauncher
                         UseShellExecute = true
                     });
 
-                    // Update timestamp for this installation
-                    if (!string.IsNullOrWhiteSpace(info.RootPath))
+                    // Update timestamp for this installation or steam
+                    if (isSteamPseudo)
+                    {
+                        InstallationService.MarkSteamLaunched(info.GameKey);
+                    }
+                    else if (!string.IsNullOrWhiteSpace(info.RootPath))
                     {
                         InstallationService.MarkInstallationLaunched(info);
                     }
+
+                    // Immediately refresh list ordering and details
+                    RefreshList();
+                    if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshInstallationsMenu();
 
                     if (LauncherSettings.Current.CloseOnLaunch)
                     {

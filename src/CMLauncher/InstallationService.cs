@@ -433,6 +433,49 @@ namespace CMLauncher
             }
             catch { return null; }
         }
+
+        private static string? GetSteamMetaPath(string gameKey)
+        {
+            var dir = GetSteamInstallPath(gameKey);
+            if (string.IsNullOrWhiteSpace(dir)) return null;
+            return Path.Combine(dir, "cm_launcher_installation-info.json");
+        }
+
+        public static DateTime? GetSteamLastPlayed(string gameKey)
+        {
+            try
+            {
+                var meta = GetSteamMetaPath(gameKey);
+                if (meta == null || !File.Exists(meta)) return null;
+                var json = File.ReadAllText(meta);
+                var doc = JsonSerializer.Deserialize<SteamInfoFile>(json);
+                if (doc != null && !string.IsNullOrWhiteSpace(doc.timestamp) && DateTime.TryParse(doc.timestamp, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+                {
+                    return dt;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        public static void MarkSteamLaunched(string gameKey)
+        {
+            try
+            {
+                var meta = GetSteamMetaPath(gameKey);
+                if (meta == null) return;
+                var now = DateTime.UtcNow;
+                var doc = new SteamInfoFile { timestamp = now.ToString("o") };
+                var json = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(meta, json);
+            }
+            catch { }
+        }
+
+        private class SteamInfoFile
+        {
+            public string? timestamp { get; set; }
+        }
     }
 
     public class InstallationInfo
