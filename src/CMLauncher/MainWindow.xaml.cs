@@ -521,7 +521,29 @@ namespace CMLauncher
 					InstallationService.EnsureSteamAppId(currentSidebarSelection, game);
 					if (File.Exists(exePath2))
 					{
-						Process.Start(new ProcessStartInfo { FileName = exePath2, WorkingDirectory = game, UseShellExecute = true });
+						// Prepare isolated data directory environment
+						var dataDir = Path.Combine(info.RootPath, "Data");
+						Directory.CreateDirectory(dataDir);
+						var appData = Path.Combine(dataDir, "AppData", "Roaming");
+						var localAppData = Path.Combine(dataDir, "AppData", "Local");
+						Directory.CreateDirectory(appData);
+						Directory.CreateDirectory(localAppData);
+
+						var psi = new ProcessStartInfo
+						{
+							FileName = exePath2,
+							WorkingDirectory = game,
+							UseShellExecute = false
+						};
+						// Inherit existing PATH and prepend game dir
+						var existingPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+						psi.Environment["PATH"] = game + ";" + existingPath;
+						psi.Environment["PWD"] = game;
+						psi.Environment["USERPROFILE"] = dataDir;
+						psi.Environment["APPDATA"] = appData;
+						psi.Environment["LOCALAPPDATA"] = localAppData;
+
+						Process.Start(psi);
 						launched = true;
 						InstallationService.MarkInstallationLaunched(info);
 					}
