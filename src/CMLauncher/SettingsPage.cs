@@ -35,17 +35,6 @@ namespace CMLauncher
                 Foreground = Brushes.White
             });
 
-            // Update section
-            var updatesRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
-            var checkUpdates = new Button { Content = "Check for Updates", Width = 160, Height = 28 };
-            checkUpdates.Click += async (_, __) =>
-            {
-                var wnd = Window.GetWindow(this);
-                await UpdateService.CheckAndPromptAsync(wnd!, silentIfUpToDate: false);
-            };
-            updatesRow.Children.Add(checkUpdates);
-            root.Children.Add(updatesRow);
-
             // Close on launch
             _closeOnLaunch = new CheckBox { Content = new TextBlock { Text = "Close launcher after launching the game", Foreground = Brushes.White }, IsChecked = s.CloseOnLaunch };
             _closeOnLaunch.Margin = new Thickness(0, 0, 0, 16);
@@ -91,7 +80,18 @@ namespace CMLauncher
             rowW.Children.Add(refreshW);
             root.Children.Add(rowW);
 
-            Content = root;
+			// Update section
+			var updatesRow = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 12, 0, 12) };
+			var checkUpdates = new Button { Content = "Check for Updates", Width = 160, Height = 28 };
+			checkUpdates.Click += async (_, __) =>
+			{
+				var wnd = Window.GetWindow(this);
+				await UpdateService.CheckAndPromptAsync(wnd!, silentIfUpToDate: false);
+			};
+			updatesRow.Children.Add(checkUpdates);
+			root.Children.Add(updatesRow);
+
+			Content = root;
         }
 
         private void BrowseForFolder(TextBox target, string gameKey)
