@@ -99,14 +99,21 @@ namespace CMLauncher
 
             if (!any)
             {
-                // Show placeholder and update selected labels
+                // Show placeholder and update selected labels, collapse version row for better vertical centering
                 InstallItemsPanel.Children.Add(CreateDisabledInstallMenuLabel("No Installations"));
                 SelectedInstallName.Text = "No Installations";
                 SelectedInstallVersion.Text = string.Empty;
+                SelectedInstallVersion.Visibility = Visibility.Collapsed;
+                // Hide the icon to avoid empty space affecting layout
+                SelectedInstallIcon.Visibility = Visibility.Collapsed;
                 UpdateSelectedIcon(null);
                 _selectedInstallButton = null;
                 return;
             }
+
+            // Ensure rows visible when we have entries
+            SelectedInstallVersion.Visibility = Visibility.Visible;
+            SelectedInstallIcon.Visibility = Visibility.Visible;
 
             // Select first item if any
             var firstButton = InstallItemsPanel.Children.OfType<Button>().FirstOrDefault(b => b.IsEnabled);
