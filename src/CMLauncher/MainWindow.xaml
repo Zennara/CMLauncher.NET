@@ -380,7 +380,7 @@
             </Grid>
 
             <!-- Bottom panel with version selection and play button -->
-            <Grid Grid.Row="1" Background="{StaticResource SidebarBackgroundBrush}">
+            <Grid x:Name="BottomPlayBar" Grid.Row="1" Background="{StaticResource SidebarBackgroundBrush}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>

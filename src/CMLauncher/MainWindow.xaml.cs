@@ -366,24 +366,29 @@ namespace CMLauncher
                     BackdropImage.Visibility = Visibility.Collapsed;
                     WordartImage.Visibility = Visibility.Collapsed;
                     MainContentFrame.Navigate(new HomePage());
+                    SetBottomPlayBarVisibility(true);
                     break;
                 case "CMZ":
                     SetBackdropFor("CMZ");
                     MainContentFrame.Navigate(new ModContentPage("CMZ"));
+                    SetBottomPlayBarVisibility(true);
                     break;
                 case "CMW":
                     SetBackdropFor("CMW");
                     MainContentFrame.Navigate(new ModContentPage("CMW"));
+                    SetBottomPlayBarVisibility(true);
                     break;
                 case "Settings":
                     BackdropImage.Visibility = Visibility.Collapsed;
                     WordartImage.Visibility = Visibility.Collapsed;
                     MainContentFrame.Navigate(new SettingsPage());
+                    SetBottomPlayBarVisibility(false);
                     break;
                 case "Changelog":
                     BackdropImage.Visibility = Visibility.Collapsed;
                     WordartImage.Visibility = Visibility.Collapsed;
                     MainContentFrame.Navigate(new ChangelogPage());
+                    SetBottomPlayBarVisibility(false);
                     break;
             }
 
@@ -391,6 +396,12 @@ namespace CMLauncher
             {
                 SelectTabButton("Play");
             }
+        }
+
+        private void SetBottomPlayBarVisibility(bool visible)
+        {
+            if (InstallPopup != null) InstallPopup.IsOpen = false;
+            if (BottomPlayBar != null) BottomPlayBar.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         }
         
         private void SelectTabButton(string tag)
