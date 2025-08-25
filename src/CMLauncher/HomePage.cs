@@ -18,7 +18,7 @@ namespace CMLauncher
             
             panel.Children.Add(new TextBlock
             {
-                Text = "Welcome to CM Launcher",
+                Text = "Welcome to CastleMiner Launcher",
                 FontSize = 24,
                 Margin = new Thickness(0, 0, 0, 20),
                 Foreground = Brushes.White

@@ -589,12 +589,12 @@ namespace CMLauncher
                 }
                 else
                 {
-                    MessageBox.Show($"Executable not found: {exePath}", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show($"Executable not found: {exePath}", "CastleMiner Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
             }
             catch
             {
-                MessageBox.Show("Failed to launch installation.", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Failed to launch installation.", "CastleMiner Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

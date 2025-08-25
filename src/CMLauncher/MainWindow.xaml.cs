@@ -482,7 +482,7 @@ namespace CMLauncher
                     }
                     else
                     {
-                        MessageBox.Show("Executable not found for Steam entry. Install a version first.", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show("Executable not found for Steam entry. Install a version first.", "CastleMiner Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
                 else
@@ -507,7 +507,7 @@ namespace CMLauncher
                     }
                     else
                     {
-                        MessageBox.Show($"Executable not found: {exePath2}", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show($"Executable not found: {exePath2}", "CastleMiner Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                 }
 
@@ -522,7 +522,7 @@ namespace CMLauncher
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to launch: {ex.Message}", "CM Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Failed to launch: {ex.Message}", "CastleMiner Launcher", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
