@@ -348,6 +348,20 @@ namespace CMLauncher
             // Placeholder: intentionally do nothing for now
         }
 
+        public static void MarkInstallationLaunched(InstallationInfo info)
+        {
+            try
+            {
+                var path = Path.Combine(info.RootPath, "installation-info.json");
+                var doc = ReadInfoFile(path) ?? new InstallationInfoFile();
+                var now = DateTime.UtcNow;
+                doc.timestamp = now.ToString("o");
+                WriteInfoFile(path, doc);
+                info.Timestamp = now;
+            }
+            catch { }
+        }
+
         private static InstallationInfoFile? ReadInfoFile(string path)
         {
             try

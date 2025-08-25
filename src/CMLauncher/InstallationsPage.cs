@@ -19,6 +19,7 @@ using FontFamily = System.Windows.Media.FontFamily;
 using Orientation = System.Windows.Controls.Orientation;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using VerticalAlignment = System.Windows.VerticalAlignment;
+using System;
 
 namespace CMLauncher
 {
@@ -226,7 +227,7 @@ namespace CMLauncher
 
             bool firstAdded = false;
 
-            // Add Steam pseudo-installation only if EXE present
+            // Add Steam pseudo-installation only if EXE present (no timestamp tracked for Steam)
             var steamExe = InstallationService.GetSteamExePath(_gameKey);
             if (!string.IsNullOrWhiteSpace(steamExe))
             {
@@ -236,6 +237,12 @@ namespace CMLauncher
             }
 
             var installs = InstallationService.LoadInstallations(_gameKey);
+            // Sort by last launched (timestamp desc), then name
+            installs = installs
+                .OrderByDescending(i => i.Timestamp ?? DateTime.MinValue)
+                .ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             foreach (var inst in installs)
             {
                 AddInstallationItem(_listHost, inst, isSelected: !firstAdded);
@@ -286,7 +293,13 @@ namespace CMLauncher
             // Info
             var infoPanel = new StackPanel();
             infoPanel.Children.Add(new TextBlock { Text = info.Name, FontSize = 16, Foreground = Brushes.White });
-            infoPanel.Children.Add(new TextBlock { Text = $"Version: {info.Version}", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 5, 0, 0) });
+            infoPanel.Children.Add(new TextBlock { Text = $"Version: {info.Version}", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 4, 0, 0) });
+            if (!string.IsNullOrWhiteSpace(info.RootPath))
+            {
+                var ts = info.Timestamp;
+                var tsText = ts.HasValue ? $"Last played: {ts.Value.ToLocalTime():g}" : "Last played: never";
+                infoPanel.Children.Add(new TextBlock { Text = tsText, FontSize = 11, Foreground = Brushes.Gray, Margin = new Thickness(0, 2, 0, 0) });
+            }
             Grid.SetColumn(infoPanel, 1);
             grid.Children.Add(infoPanel);
 
@@ -302,10 +315,10 @@ namespace CMLauncher
                 BorderThickness = new Thickness(0),
                 Margin = new Thickness(0, 0, 8, 0)
             };
-            playBtn.Click += (s, e) => LaunchInstallation(info);
+            playBtn.Click += (s, e) => { LaunchInstallation(info); };
             actions.Children.Add(playBtn);
 
-            // Folder glyph
+            // Folder glyph (unchanged)
             var folderBtn = new Button
             {
                 Padding = new Thickness(10, 6, 10, 6),
@@ -324,7 +337,6 @@ namespace CMLauncher
                     var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
                     if (isSteamPseudo)
                     {
-                        // Use configured/detected steam path
                         path = LauncherSettings.Current.GetSteamPathForGame(info.GameKey) ?? SteamLocator.FindGamePath(InstallationService.GetAppId(info.GameKey));
                     }
                     else
@@ -339,7 +351,7 @@ namespace CMLauncher
             };
             actions.Children.Add(folderBtn);
 
-            // More menu
+            // More menu (unchanged)
             bool isDefaultSteam = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
             if (!isDefaultSteam)
             {
@@ -368,7 +380,7 @@ namespace CMLauncher
             grid.Children.Add(actions);
 
             border.MouseEnter += (s, e) => actions.Visibility = Visibility.Visible;
-            border.MouseLeave += (s, e) => { /* keep visible if any popup open */ actions.Visibility = Visibility.Collapsed; };
+            border.MouseLeave += (s, e) => { actions.Visibility = Visibility.Collapsed; };
 
             border.Child = grid;
             panel.Children.Add(border);
@@ -535,7 +547,6 @@ namespace CMLauncher
                 var isSteamPseudo = string.IsNullOrEmpty(info.RootPath) || string.Equals(info.Name, "Steam Installation", System.StringComparison.OrdinalIgnoreCase);
                 if (isSteamPseudo)
                 {
-                    // Use configured or detected Steam path
                     gameDir = LauncherSettings.Current.GetSteamPathForGame(info.GameKey);
                     if (string.IsNullOrWhiteSpace(gameDir))
                     {
@@ -543,7 +554,6 @@ namespace CMLauncher
                     }
                     if (string.IsNullOrWhiteSpace(gameDir))
                     {
-                        // Fallback: versions root (user may have copied Steam files there)
                         gameDir = InstallationService.GetVersionsPath(info.GameKey);
                     }
                 }
@@ -562,6 +572,13 @@ namespace CMLauncher
                         WorkingDirectory = gameDir,
                         UseShellExecute = true
                     });
+
+                    // Update timestamp for this installation
+                    if (!string.IsNullOrWhiteSpace(info.RootPath))
+                    {
+                        InstallationService.MarkInstallationLaunched(info);
+                    }
+
                     if (LauncherSettings.Current.CloseOnLaunch)
                     {
                         Application.Current.MainWindow?.Close();

@@ -90,7 +90,10 @@ namespace CMLauncher
                 any = true;
             }
 
-            var installs = InstallationService.LoadInstallations(gameKey);
+            var installs = InstallationService.LoadInstallations(gameKey)
+                .OrderByDescending(i => i.Timestamp ?? DateTime.MinValue)
+                .ThenBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
             foreach (var inst in installs)
             {
                 InstallItemsPanel.Children.Add(CreateInstallMenuButton(inst.Name, inst.Version, inst.IconName));
@@ -487,6 +490,9 @@ namespace CMLauncher
                     {
                         Process.Start(new ProcessStartInfo { FileName = exePath2, WorkingDirectory = game, UseShellExecute = true });
                         launched = true;
+
+                        // Mark last launched timestamp
+                        InstallationService.MarkInstallationLaunched(info);
                     }
                     else
                     {
