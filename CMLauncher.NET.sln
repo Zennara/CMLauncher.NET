@@ -19,6 +19,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "git", "git", "{8EC462FD-D22
 		.gitignore = .gitignore
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "data", "data", "{3B8BC127-712F-4424-BA43-C4EFB1F58E78}"
+	ProjectSection(SolutionItems) = preProject
+		data\cmw-manifests.json = data\cmw-manifests.json
+		data\cmz-manifests.json = data\cmz-manifests.json
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
