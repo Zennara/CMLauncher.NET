@@ -138,6 +138,101 @@ namespace CMLauncher
 		public static string GetExeName(string gameKey) => string.Equals(gameKey, CMWKey, StringComparison.OrdinalIgnoreCase) ? "CastleMinerWarfare.exe" : "CastleMinerZ.exe";
 		public static string GetAppId(string gameKey) => string.Equals(gameKey, CMWKey, StringComparison.OrdinalIgnoreCase) ? CMWAppId : CMZAppId;
 
+		public static string EnsureVersionByManifest(string gameKey, string manifestId, string branch = "public")
+		{
+			var versionsRoot = GetVersionsPath(gameKey);
+			Directory.CreateDirectory(versionsRoot);
+			var target = Path.Combine(versionsRoot, manifestId);
+			if (Directory.Exists(target)) return target;
+
+			try
+			{
+				var ddExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "depot-downloader", "DepotDownloader.exe");
+				if (!File.Exists(ddExe))
+				{
+					ddExe = Path.Combine(Directory.GetCurrentDirectory(), "depot-downloader", "DepotDownloader.exe");
+				}
+				if (File.Exists(ddExe))
+				{
+					var appId = GetAppId(gameKey);
+					var depotId = gameKey == CMZKey ? "253431" : "675211";
+					Directory.CreateDirectory(target);
+					var branchArg = string.Equals(branch, "public", StringComparison.OrdinalIgnoreCase) ? string.Empty : $" -branch {branch}";
+					var creds = BuildCredentialArgs();
+					var psi = new ProcessStartInfo
+					{
+						FileName = ddExe,
+						Arguments = $"-app {appId} -depot {depotId} -manifest {manifestId}{branchArg}{creds} -dir \"{target}\"",
+						WorkingDirectory = Path.GetDirectoryName(ddExe) ?? AppDomain.CurrentDomain.BaseDirectory,
+						UseShellExecute = true,
+						CreateNoWindow = false
+					};
+					var p = Process.Start(psi);
+					p!.WaitForExit();
+				}
+			}
+			catch { }
+
+			return target;
+		}
+
+		private static string BuildCredentialArgs()
+		{
+			var u = LauncherSettings.Current.SteamUsername;
+			var p = LauncherSettings.Current.SteamPassword;
+			if (!string.IsNullOrWhiteSpace(u) && !string.IsNullOrWhiteSpace(p))
+			{
+				return $" -username {u} -password \"{p}\" -remember-password";
+			}
+			return string.Empty;
+		}
+
+		public static (bool ownsCmz, bool ownsCmw, bool authOk) TryAuthenticateAndDetectOwnership()
+		{
+			bool ownsCmz = false, ownsCmw = false, authOk = false;
+			var ddExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "depot-downloader", "DepotDownloader.exe");
+			if (!File.Exists(ddExe)) ddExe = Path.Combine(Directory.GetCurrentDirectory(), "depot-downloader", "DepotDownloader.exe");
+			if (!File.Exists(ddExe)) return (false, false, false);
+
+			(string app, string depot)[] checks = new[] { (CMZAppId, "253431"), (CMWAppId, "675211") };
+			foreach (var (app, depot) in checks)
+			{
+				try
+				{
+					var creds = BuildCredentialArgs();
+					var psi = new ProcessStartInfo
+					{
+						FileName = ddExe,
+						Arguments = $"-app {app} -depot {depot}{creds} -manifest-only",
+						WorkingDirectory = Path.GetDirectoryName(ddExe) ?? AppDomain.CurrentDomain.BaseDirectory,
+						UseShellExecute = false,
+						RedirectStandardOutput = true,
+						RedirectStandardError = true,
+						CreateNoWindow = true
+					};
+					using var p = Process.Start(psi)!;
+					string output = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
+					p.WaitForExit();
+					if (output.Contains("Failed to authenticate", StringComparison.OrdinalIgnoreCase) || output.Contains("InvalidPassword", StringComparison.OrdinalIgnoreCase))
+					{
+						authOk = false;
+						return (false, false, false);
+					}
+					if (output.Contains("Got depot key", StringComparison.OrdinalIgnoreCase) || output.Contains("Processing depot", StringComparison.OrdinalIgnoreCase))
+					{
+						authOk = true;
+						if (app == CMZAppId) ownsCmz = true; else ownsCmw = true;
+					}
+					else if (output.Contains("is not available from this account", StringComparison.OrdinalIgnoreCase))
+					{
+						authOk = true; // Auth worked but not owned
+					}
+				}
+				catch { }
+			}
+			return (ownsCmz, ownsCmw, authOk);
+		}
+
 		public static InstallationInfo CreateInstallation(string gameKey, string name, string version, string? iconName = null)
 		{
 			var installsRoot = GetInstallationsPath(gameKey);
@@ -177,6 +272,17 @@ namespace CMLauncher
 				if (!string.IsNullOrWhiteSpace(steamDir) && Directory.Exists(steamDir))
 				{
 					versionSource = steamDir;
+				}
+			}
+			else
+			{
+				// version may be manifest or manifest|branch
+				var parts = version.Split('|');
+				var manifest = parts[0];
+				var branch = parts.Length > 1 ? parts[1] : "public";
+				if (manifest.All(char.IsDigit))
+				{
+					versionSource = EnsureVersionByManifest(gameKey, manifest, branch);
 				}
 			}
 
@@ -317,6 +423,16 @@ namespace CMLauncher
 				if (!string.IsNullOrWhiteSpace(steamDir) && Directory.Exists(steamDir))
 				{
 					versionSource = steamDir;
+				}
+			}
+			else
+			{
+				var parts = version.Split('|');
+				var manifest = parts[0];
+				var branch = parts.Length > 1 ? parts[1] : "public";
+				if (manifest.All(char.IsDigit))
+				{
+					versionSource = EnsureVersionByManifest(info.GameKey, manifest, branch);
 				}
 			}
 

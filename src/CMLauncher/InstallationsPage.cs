@@ -14,9 +14,7 @@ using FontFamily = System.Windows.Media.FontFamily;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using Image = System.Windows.Controls.Image;
 using MessageBox = System.Windows.MessageBox;
-using Orientation = System.Windows.Controls.Orientation;
-using TextBox = System.Windows.Controls.TextBox;
-using VerticalAlignment = System.Windows.VerticalAlignment;
+using System.Linq;
 
 namespace CMLauncher
 {
@@ -165,12 +163,13 @@ namespace CMLauncher
 				string steamVersion = InstallationService.GetSteamExeVersion(_gameKey) ?? "Unknown";
 				versionCombo.Items.Add(new ComboBoxItem { Content = $"Steam - {steamVersion}", Tag = "Steam Version" });
 			}
-			foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
-			{
-				versionCombo.Items.Add(v);
-			}
-			versionCombo.SelectedIndex = versionCombo.Items.Count > 0 ? 0 : -1;
+
+			// Load CMZ manifests from remote, else fallback to local versions list
+			versionCombo.Items.Add(new ComboBoxItem { Content = "Loading versions...", IsEnabled = false });
+			versionCombo.SelectedIndex = versionCombo.Items.Count - 1;
 			panel.Children.Add(versionCombo);
+
+			_ = LoadVersionsIntoComboAsync(versionCombo, _gameKey);
 
 			var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
 			var cancel = new Button { Content = "Cancel", Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 6, 14, 6) };
@@ -181,6 +180,21 @@ namespace CMLauncher
 				var name = string.IsNullOrWhiteSpace(nameBox.Text) ? "Unnamed installation" : nameBox.Text.Trim();
 				var version = GetVersionKey(versionCombo.SelectedItem);
 				if (string.IsNullOrEmpty(version)) { MessageBox.Show("Please select a version."); return; }
+
+				// If CMZ and version is manifest|branch or digits, ensure it exists (download now)
+				try
+				{
+					var parts = version.Split('|');
+					var manifest = parts[0];
+					var branch = parts.Length > 1 ? parts[1] : "public";
+					if (_gameKey == InstallationService.CMZKey && manifest.All(char.IsDigit))
+					{
+						// Perform download synchronously
+						InstallationService.EnsureVersionByManifest(_gameKey, manifest, branch);
+					}
+				}
+				catch { }
+
 				InstallationService.CreateInstallation(_gameKey, name, version, selectedIcon);
 				dlg.Close();
 				RefreshList();
@@ -196,6 +210,48 @@ namespace CMLauncher
 
 			dlg.Content = panel;
 			dlg.ShowDialog();
+		}
+
+		private async System.Threading.Tasks.Task LoadVersionsIntoComboAsync(ComboBox combo, string gameKey)
+		{
+			try
+			{
+				// Clear loading item (but keep Steam if present)
+				var steamItem = combo.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (i.Tag as string) == "Steam Version");
+				combo.Items.Clear();
+				if (steamItem != null) combo.Items.Add(steamItem);
+
+				if (string.Equals(gameKey, InstallationService.CMZKey, StringComparison.OrdinalIgnoreCase))
+				{
+					var list = await ManifestService.FetchCmzManifestsAsync();
+					foreach (var m in list)
+					{
+						var label = string.IsNullOrWhiteSpace(m.Version) ? m.ManifestId : m.Version;
+						var branch = string.IsNullOrWhiteSpace(m.Branch) ? "public" : m.Branch;
+						combo.Items.Add(new ComboBoxItem { Content = label, Tag = $"{m.ManifestId}|{branch}" });
+					}
+				}
+				else
+				{
+					// fallback to local versions folder for other games
+					foreach (var v in InstallationService.LoadAvailableVersions(gameKey))
+					{
+						combo.Items.Add(new ComboBoxItem { Content = v, Tag = v });
+					}
+				}
+
+				combo.SelectedIndex = combo.Items.Count > 0 ? 0 : -1;
+			}
+			catch
+			{
+				// If anything fails, fallback to local versions
+				combo.Items.Clear();
+				foreach (var v in InstallationService.LoadAvailableVersions(gameKey))
+				{
+					combo.Items.Add(new ComboBoxItem { Content = v, Tag = v });
+				}
+				combo.SelectedIndex = combo.Items.Count > 0 ? 0 : -1;
+			}
 		}
 
 		private static string GetVersionKey(object? item)
@@ -466,7 +522,7 @@ namespace CMLauncher
 			var nameBox = new TextBox { Width = 360, Text = info.Name };
 			panel.Children.Add(nameBox);
 
-			// Version dropdown from versions folder, add Steam Version only if EXE exists
+			// Version dropdown from remote/local
 			panel.Children.Add(new TextBlock { Text = "Version", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 6) });
 			var versionCombo = new ComboBox { Width = 360 };
 			var steamExe2 = InstallationService.GetSteamExePath(_gameKey);
@@ -475,18 +531,9 @@ namespace CMLauncher
 				string steamVersion = InstallationService.GetSteamExeVersion(_gameKey) ?? "Unknown";
 				versionCombo.Items.Add(new ComboBoxItem { Content = $"Steam - {steamVersion}", Tag = "Steam Version" });
 			}
-			foreach (var v in InstallationService.LoadAvailableVersions(_gameKey))
-			{
-				versionCombo.Items.Add(v);
-			}
-			int idx = -1;
-			for (int i = 0; i < versionCombo.Items.Count; i++)
-			{
-				var key = GetVersionKey(versionCombo.Items[i]);
-				if (string.Equals(key, info.Version, System.StringComparison.OrdinalIgnoreCase)) { idx = i; break; }
-			}
-			versionCombo.SelectedIndex = idx >= 0 ? idx : (versionCombo.Items.Count > 0 ? 0 : -1);
+			versionCombo.Items.Add(new ComboBoxItem { Content = "Loading versions...", IsEnabled = false });
 			panel.Children.Add(versionCombo);
+			_ = LoadVersionsIntoComboAsync(versionCombo, _gameKey);
 
 			var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = System.Windows.HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
 			var cancel = new Button { Content = "Cancel", Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(14, 6, 14, 6) };

@@ -34,11 +34,14 @@ namespace CMLauncher
 		{
 			InitializeComponent();
 
+			// Show stored username in account header
+			UpdateAccountHeader();
+
 			// Set bottom-left app version from InformationalVersion (strip +build metadata)
 			try
 			{
 				var info = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-						   ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
+					   ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
 				var plusIdx = info.IndexOf('+');
 				var pretty = plusIdx >= 0 ? info.Substring(0, plusIdx) : info;
 				AppVersionText.Text = $"v{pretty}";
@@ -60,6 +63,9 @@ namespace CMLauncher
 					SelectSidebarButton(btnCMZ);
 					Debug.WriteLine("Successfully selected CMZ button on startup");
 
+					// Ensure header reflects any username saved during app startup login
+					UpdateAccountHeader();
+
 					// Auto-check for updates (silent if up to date)
 					await UpdateService.CheckAndPromptAsync(this, silentIfUpToDate: true);
 				}
@@ -68,6 +74,16 @@ namespace CMLauncher
 					Debug.WriteLine($"ERROR during initial setup: {ex.Message}");
 				}
 			};
+		}
+
+		private void UpdateAccountHeader()
+		{
+			try
+			{
+				var name = LauncherSettings.Current.SteamUsername;
+				AccountDisplayName.Text = string.IsNullOrWhiteSpace(name) ? "Not signed in" : name;
+			}
+			catch { }
 		}
 
 		private Button CreateDisabledInstallMenuLabel(string text)
@@ -689,8 +705,34 @@ namespace CMLauncher
 				AccountToggle.IsChecked = false;
 			}
 
-			// TODO: Insert real sign-out logic here
-			MessageBox.Show("Logged out.", "Account", MessageBoxButton.OK, MessageBoxImage.Information);
+			try
+			{
+				// Clear stored credentials and ownership flags
+				LauncherSettings.Current.SteamUsername = null;
+				LauncherSettings.Current.SteamPassword = null;
+				LauncherSettings.Current.OwnsCMZ = null;
+				LauncherSettings.Current.OwnsCMW = null;
+				LauncherSettings.Current.Save();
+
+				// Update header immediately
+				UpdateAccountHeader();
+
+				// Restart application
+				var exe = Environment.ProcessPath ?? Assembly.GetEntryAssembly()?.Location;
+				if (!string.IsNullOrWhiteSpace(exe))
+				{
+					Process.Start(new ProcessStartInfo
+					{
+						FileName = exe,
+						UseShellExecute = true
+					});
+				}
+				Application.Current.Shutdown();
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"Failed to log out: {ex.Message}", "Account", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
 		}
 
 		public void RefreshInstallationsMenu()

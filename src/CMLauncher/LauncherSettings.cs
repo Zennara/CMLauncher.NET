@@ -9,6 +9,12 @@ namespace CMLauncher
 		public string? SteamPathCMZ { get; set; }
 		public string? SteamPathCMW { get; set; }
 
+		// Saved DepotDownloader credentials
+		public string? SteamUsername { get; set; }
+		public string? SteamPassword { get; set; }
+		public bool? OwnsCMZ { get; set; }
+		public bool? OwnsCMW { get; set; }
+
 		// Remember last selected installation per game (store the display name e.g., "Steam Installation" or custom name)
 		public string? LastSelectedCMZ { get; set; }
 		public string? LastSelectedCMW { get; set; }
