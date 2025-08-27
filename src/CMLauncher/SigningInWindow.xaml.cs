@@ -24,15 +24,30 @@ namespace CMLauncher
 		private async void SigningInWindow_Loaded(object sender, RoutedEventArgs e)
 		{
 			StatusText.Text = "Checking ownership...";
-			void OnSteamGuard()
+
+			string? PromptForGuardCode()
+			{
+				string? code = null;
+				Dispatcher.Invoke(() =>
+				{
+					var dlg = new SteamGuardCodeWindow { Owner = this };
+					if (dlg.ShowDialog() == true)
+					{
+						code = dlg.Code?.Trim();
+					}
+				});
+				return code;
+			}
+
+			void OnRateLimit()
 			{
 				Dispatcher.Invoke(() =>
 				{
-					MessageBox.Show(this, "Steam Guard confirmation required. Approve the sign-in in your Steam Mobile app, then click OK.", "Steam Guard", MessageBoxButton.OK, MessageBoxImage.Information);
+					MessageBox.Show(this, "Steam is rate limiting sign-ins right now. Please wait a minute and try again.", "Rate limited", MessageBoxButton.OK, MessageBoxImage.Warning);
 				});
 			}
 
-			var result = await Task.Run(() => InstallationService.TryAuthenticateAndDetectOwnershipDetailed(_username, _password, OnSteamGuard));
+			var result = await Task.Run(() => InstallationService.TryAuthenticateAndDetectOwnershipWithGuard(_username, _password, PromptForGuardCode, OnRateLimit));
 			AuthOk = result.authOk;
 			OwnsCmz = result.ownsCmz;
 			OwnsCmw = result.ownsCmw;

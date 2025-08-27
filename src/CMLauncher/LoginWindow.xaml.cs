@@ -6,7 +6,7 @@ namespace CMLauncher
 {
 	public partial class LoginWindow : Window
 	{
-		private bool _steamGuardPopupShown;
+		private bool _rateLimitPopupShown;
 
 		public LoginWindow()
 		{
@@ -26,20 +26,35 @@ namespace CMLauncher
 
 			try
 			{
-				void OnSteamGuard()
+				string? PromptForGuardCode()
 				{
-					if (_steamGuardPopupShown) return;
-					_steamGuardPopupShown = true;
+					string? code = null;
 					Dispatcher.Invoke(() =>
 					{
-						MessageBox.Show(this, "Steam Guard confirmation required. Approve the sign-in in your Steam Mobile app. This window will remain open. Click Login again after approval.", "Steam Guard", MessageBoxButton.OK, MessageBoxImage.Information);
+						var dlg = new SteamGuardCodeWindow { Owner = this };
+						if (dlg.ShowDialog() == true)
+						{
+							code = dlg.Code?.Trim();
+						}
+					});
+					return code;
+				}
+
+				void OnRateLimit()
+				{
+					if (_rateLimitPopupShown) return;
+					_rateLimitPopupShown = true;
+					Dispatcher.Invoke(() =>
+					{
+						MessageBox.Show(this, "Steam is rate limiting sign-ins right now. Please wait a minute and try again.", "Rate limited", MessageBoxButton.OK, MessageBoxImage.Warning);
 					});
 				}
 
-				var result = await Task.Run(() => InstallationService.TryAuthCredentialsWithCallback(u, p, OnSteamGuard));
+				var result = await Task.Run(() => InstallationService.TryAuthCredentialsWithGuard(u, p, PromptForGuardCode, OnRateLimit));
 				if (!result.authOk)
 				{
-					if (result.steamGuard) return;
+					// If rate limited, keep open; otherwise prompt invalid credentials
+					if (_rateLimitPopupShown) return;
 					MessageBox.Show(this, "Invalid Steam credentials. Please try again.", "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
 					return;
 				}
