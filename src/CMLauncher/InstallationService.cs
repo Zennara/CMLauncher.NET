@@ -252,6 +252,37 @@ namespace CMLauncher
 			return (ownsCmz, ownsCmw, authOk);
 		}
 
+		public static bool TryAuthenticateCredentials(string username, string password)
+		{
+			var ddExe = GetDepotDownloaderExePath();
+			if (string.IsNullOrWhiteSpace(ddExe)) return false;
+			try
+			{
+				// Use CMZ app/depot as a lightweight auth probe
+				var creds = BuildCredentialArgs(username, password);
+				var psi = new ProcessStartInfo
+				{
+					FileName = ddExe,
+					Arguments = $"-app {CMZAppId} -depot 253431{creds} -manifest-only",
+					WorkingDirectory = Path.GetDirectoryName(ddExe) ?? AppDomain.CurrentDomain.BaseDirectory,
+					UseShellExecute = false,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					CreateNoWindow = true
+				};
+				using var p = Process.Start(psi)!;
+				string output = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
+				p.WaitForExit();
+				if (output.Contains("Failed to authenticate", StringComparison.OrdinalIgnoreCase) || output.Contains("InvalidPassword", StringComparison.OrdinalIgnoreCase))
+				{
+					return false;
+				}
+				// Any other outcome means credentials worked (even if app not owned)
+				return true;
+			}
+			catch { return false; }
+		}
+
 		public static InstallationInfo CreateInstallation(string gameKey, string name, string version, string? iconName = null)
 		{
 			var installsRoot = GetInstallationsPath(gameKey);

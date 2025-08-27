@@ -14,25 +14,34 @@ namespace CMLauncher.NET
 			// Avoid shutting down while no window is open during login/auth
 			ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
 
-			// Ask credentials if missing
+			// Ask credentials if missing and block until provided
 			if (string.IsNullOrWhiteSpace(CMLauncher.LauncherSettings.Current.SteamUsername) || string.IsNullOrWhiteSpace(CMLauncher.LauncherSettings.Current.SteamPassword))
 			{
 				while (!PromptLogin()) { }
 			}
 
-			// Verify credentials and detect ownership using saved settings
-			var (ownsCmz, ownsCmw, authOk) = CMLauncher.InstallationService.TryAuthenticateAndDetectOwnership(
-				CMLauncher.LauncherSettings.Current.SteamUsername ?? string.Empty,
-				CMLauncher.LauncherSettings.Current.SteamPassword ?? string.Empty);
+			// Show signing-in window (modal) to check ownership
+			var user = CMLauncher.LauncherSettings.Current.SteamUsername ?? string.Empty;
+			var pass = CMLauncher.LauncherSettings.Current.SteamPassword ?? string.Empty;
+			var signing = new CMLauncher.SigningInWindow(user, pass) { ShowInTaskbar = false };
+			bool? okDialog = signing.ShowDialog();
+			bool authOk = okDialog == true && signing.AuthOk;
+			bool ownsCmz = signing.OwnsCmz;
+			bool ownsCmw = signing.OwnsCmw;
+
 			if (!authOk)
 			{
-				// Since there is no cancel, loop until success
+				// Ownership/auth failed: re-run login until success
 				while (true)
 				{
 					if (!PromptLogin()) continue;
-					(ownsCmz, ownsCmw, authOk) = CMLauncher.InstallationService.TryAuthenticateAndDetectOwnership(
-						CMLauncher.LauncherSettings.Current.SteamUsername ?? string.Empty,
-						CMLauncher.LauncherSettings.Current.SteamPassword ?? string.Empty);
+					user = CMLauncher.LauncherSettings.Current.SteamUsername ?? string.Empty;
+					pass = CMLauncher.LauncherSettings.Current.SteamPassword ?? string.Empty;
+					signing = new CMLauncher.SigningInWindow(user, pass) { ShowInTaskbar = false };
+					okDialog = signing.ShowDialog();
+					authOk = okDialog == true && signing.AuthOk;
+					ownsCmz = signing.OwnsCmz;
+					ownsCmw = signing.OwnsCmw;
 					if (authOk) break;
 				}
 			}
@@ -41,15 +50,9 @@ namespace CMLauncher.NET
 			CMLauncher.LauncherSettings.Current.OwnsCMW = ownsCmw;
 			CMLauncher.LauncherSettings.Current.Save();
 
-			// Ensure main window is created and visible after successful login/auth
-			if (Current.MainWindow == null)
-			{
-				Current.MainWindow = new CMLauncher.MainWindow();
-			}
-			if (!Current.MainWindow.IsVisible)
-			{
-				Current.MainWindow.Show();
-			}
+			// Create and show the real main window now; explicitly assign as MainWindow
+			Current.MainWindow = new CMLauncher.MainWindow();
+			Current.MainWindow.Show();
 
 			// Restore normal shutdown behavior
 			ShutdownMode = System.Windows.ShutdownMode.OnMainWindowClose;

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace CMLauncher
 {
@@ -11,7 +12,7 @@ namespace CMLauncher
 			UsernameBox.Text = LauncherSettings.Current.SteamUsername ?? string.Empty;
 		}
 
-		private void Save_Click(object sender, RoutedEventArgs e)
+		private async void Save_Click(object sender, RoutedEventArgs e)
 		{
 			var u = UsernameBox.Text?.Trim() ?? string.Empty;
 			var p = PasswordBox.Password ?? string.Empty;
@@ -21,25 +22,33 @@ namespace CMLauncher
 				return;
 			}
 
-			// Validate credentials by running DepotDownloader -manifest-only
+			// First do a lightweight auth-only probe to keep UI responsive
 			try
 			{
-				var (ownsCmz, ownsCmw, authOk) = InstallationService.TryAuthenticateAndDetectOwnership(u, p);
-				if (!authOk)
+				bool auth = await Task.Run(() => InstallationService.TryAuthenticateCredentials(u, p));
+				if (!auth)
 				{
 					MessageBox.Show(this, "Invalid Steam credentials. Please try again.", "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
-					return; // keep dialog open
+					return;
 				}
 
-				// Save creds and ownership flags when authentication succeeded
+				// Save creds immediately
 				LauncherSettings.Current.SteamUsername = u;
 				LauncherSettings.Current.SteamPassword = p;
-				LauncherSettings.Current.OwnsCMZ = ownsCmz;
-				LauncherSettings.Current.OwnsCMW = ownsCmw;
 				LauncherSettings.Current.Save();
 
+				// Close dialog to let app start fast
 				DialogResult = true;
 				Close();
+
+				// After the app starts, do ownership detection in background and persist
+				_ = Task.Run(() =>
+				{
+					var (ownsCmz, ownsCmw, _) = InstallationService.TryAuthenticateAndDetectOwnership(u, p);
+					LauncherSettings.Current.OwnsCMZ = ownsCmz;
+					LauncherSettings.Current.OwnsCMW = ownsCmw;
+					LauncherSettings.Current.Save();
+				});
 			}
 			catch
 			{
