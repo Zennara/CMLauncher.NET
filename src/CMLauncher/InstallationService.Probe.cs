@@ -6,10 +6,13 @@ namespace CMLauncher
 {
 	public static partial class InstallationService
 	{
-		private static (string output, bool steamGuard, bool rateLimited) RunDepotProbe(string appId, string depotId, string username, string password, Action? onSteamGuardDetected, Action? onRateLimitDetected)
+		private static (string output, bool steamGuard, bool rateLimited, bool invalidGuard) RunDepotProbe(string appId, string depotId, string username, string password, Action? onSteamGuardDetected, Action? onRateLimitDetected)
 		{
 			var ddExe = GetDepotDownloaderExePath();
-			if (string.IsNullOrWhiteSpace(ddExe)) return (string.Empty, false, false);
+			if (string.IsNullOrWhiteSpace(ddExe)) 
+			{
+				return ("DepotDownloader not found", false, false, false);
+			}
 
 			var creds = BuildCredentialArgs(username, password);
 			var psi = new ProcessStartInfo
@@ -26,11 +29,14 @@ namespace CMLauncher
 			var sb = new StringBuilder();
 			bool steamGuard = false;
 			bool rateLimited = false;
+			bool invalidGuard = false;
+			
 			using var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
 			DataReceivedEventHandler onData = (_, e) =>
 			{
 				if (e.Data == null) return;
 				sb.AppendLine(e.Data);
+				
 				if (!steamGuard && ContainsSteamGuardPrompt(e.Data))
 				{
 					steamGuard = true;
@@ -40,6 +46,10 @@ namespace CMLauncher
 				{
 					rateLimited = true;
 					try { onRateLimitDetected?.Invoke(); } catch { }
+				}
+				if (!invalidGuard && ContainsInvalidGuardPrompt(e.Data))
+				{
+					invalidGuard = true;
 				}
 			};
 			p.OutputDataReceived += onData;
@@ -52,15 +62,19 @@ namespace CMLauncher
 				p.BeginErrorReadLine();
 				p.WaitForExit();
 			}
-			catch { }
+			catch (Exception ex)
+			{
+				return ($"Failed to run DepotDownloader: {ex.Message}", false, false, false);
+			}
 
-			return (sb.ToString(), steamGuard, rateLimited);
+			return (sb.ToString(), steamGuard, rateLimited, invalidGuard);
 		}
 
 		private static (string output, bool steamGuard, bool rateLimited) RunDepotProbeWithGuard(string appId, string depotId, string username, string password, string guardCode)
 		{
 			var ddExe = GetDepotDownloaderExePath();
-			if (string.IsNullOrWhiteSpace(ddExe)) return (string.Empty, false, false);
+			if (string.IsNullOrWhiteSpace(ddExe)) return ("DepotDownloader not found", false, false);
+			
 			var creds = BuildCredentialArgs(username, password, guardCode);
 			var psi = new ProcessStartInfo
 			{
@@ -72,9 +86,11 @@ namespace CMLauncher
 				RedirectStandardError = true,
 				CreateNoWindow = true
 			};
+			
 			var sb = new StringBuilder();
 			bool steamGuard = false;
 			bool rateLimited = false;
+			
 			using var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
 			DataReceivedEventHandler onData = (_, e) =>
 			{
@@ -85,6 +101,7 @@ namespace CMLauncher
 			};
 			p.OutputDataReceived += onData;
 			p.ErrorDataReceived += onData;
+			
 			try
 			{
 				p.Start();
@@ -93,6 +110,7 @@ namespace CMLauncher
 				p.WaitForExit();
 			}
 			catch { }
+			
 			return (sb.ToString(), steamGuard, rateLimited);
 		}
 	}

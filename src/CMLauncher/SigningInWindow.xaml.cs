@@ -25,16 +25,14 @@ namespace CMLauncher
 		{
 			StatusText.Text = "Checking ownership...";
 
-			string? PromptForGuardCode()
+			string? PromptForGuard()
 			{
 				string? code = null;
 				Dispatcher.Invoke(() =>
 				{
-					var dlg = new SteamGuardCodeWindow { Owner = this };
-					if (dlg.ShowDialog() == true)
-					{
-						code = dlg.Code?.Trim();
-					}
+					var w = new SteamGuardPromptWindow("A Steam Guard code is required to verify ownership. Enter code:") { Owner = this };
+					var ok = w.ShowDialog();
+					code = ok == true ? w.GuardCode : null;
 				});
 				return code;
 			}
@@ -47,7 +45,7 @@ namespace CMLauncher
 				});
 			}
 
-			var result = await Task.Run(() => InstallationService.TryAuthenticateAndDetectOwnershipWithGuard(_username, _password, PromptForGuardCode, OnRateLimit));
+			var result = await Task.Run(() => InstallationService.TryAuthenticateAndDetectOwnershipWithGuard(_username, _password, PromptForGuard, OnRateLimit));
 			AuthOk = result.authOk;
 			OwnsCmz = result.ownsCmz;
 			OwnsCmw = result.ownsCmw;

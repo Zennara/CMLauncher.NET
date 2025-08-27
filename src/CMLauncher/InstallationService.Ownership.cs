@@ -15,7 +15,10 @@ namespace CMLauncher
 			{
 				try
 				{
-					var (output, sg, rl) = RunDepotProbe(app, depot, username, password, onSteamGuardDetected, onRateLimitDetected);
+					var res = RunDepotProbe(app, depot, username, password, onSteamGuardDetected, onRateLimitDetected);
+					var output = res.output;
+					var sg = res.steamGuard;
+					var rl = res.rateLimited;
 					if (sg) steamGuard = true;
 					if (rl) return (false, false, false, steamGuard);
 					if (output.Contains("Failed to authenticate", StringComparison.OrdinalIgnoreCase) || output.Contains("InvalidPassword", StringComparison.OrdinalIgnoreCase))
@@ -52,20 +55,23 @@ namespace CMLauncher
 					(string output, bool sg, bool rl) res;
 					if (string.IsNullOrWhiteSpace(guardCode))
 					{
-						res = RunDepotProbe(app, depot, username, password, () => { steamGuard = true; }, onRateLimitDetected);
+						var probe = RunDepotProbe(app, depot, username, password, () => { steamGuard = true; }, onRateLimitDetected);
+						res = (probe.output, probe.steamGuard, probe.rateLimited);
 						if (res.rl) return (false, false, false, steamGuard);
 						if (res.sg)
 						{
 							steamGuard = true;
 							guardCode = promptForGuardCode();
 							if (string.IsNullOrWhiteSpace(guardCode)) return (false, false, false, steamGuard);
-							res = RunDepotProbeWithGuard(app, depot, username, password, guardCode);
+							var withGuard = RunDepotProbeWithGuard(app, depot, username, password, guardCode);
+							res = (withGuard.output, withGuard.steamGuard, withGuard.rateLimited);
 							if (res.rl) return (false, false, false, steamGuard);
 						}
 					}
 					else
 					{
-						res = RunDepotProbeWithGuard(app, depot, username, password, guardCode);
+						var withGuard = RunDepotProbeWithGuard(app, depot, username, password, guardCode);
+						res = (withGuard.output, withGuard.steamGuard, withGuard.rateLimited);
 						if (res.rl) return (false, false, false, steamGuard);
 					}
 

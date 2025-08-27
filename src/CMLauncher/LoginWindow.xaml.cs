@@ -26,16 +26,15 @@ namespace CMLauncher
 
 			try
 			{
-				string? PromptForGuardCode()
+				string? PromptForGuard()
 				{
 					string? code = null;
 					Dispatcher.Invoke(() =>
 					{
-						var dlg = new SteamGuardCodeWindow { Owner = this };
-						if (dlg.ShowDialog() == true)
-						{
-							code = dlg.Code?.Trim();
-						}
+						string hint = "Enter the Steam Guard code sent to your email or from your mobile app.";
+						var w = new SteamGuardPromptWindow(hint) { Owner = this };
+						var ok = w.ShowDialog();
+						code = ok == true ? w.GuardCode : null;
 					});
 					return code;
 				}
@@ -50,12 +49,13 @@ namespace CMLauncher
 					});
 				}
 
-				var result = await Task.Run(() => InstallationService.TryAuthCredentialsWithGuard(u, p, PromptForGuardCode, OnRateLimit));
+				var result = await Task.Run(() => InstallationService.TryAuthCredentialsWithGuard(u, p, PromptForGuard, OnRateLimit));
 				if (!result.authOk)
 				{
-					// If rate limited, keep open; otherwise prompt invalid credentials
-					if (_rateLimitPopupShown) return;
-					MessageBox.Show(this, "Invalid Steam credentials. Please try again.", "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
+					Dispatcher.Invoke(() =>
+					{
+						MessageBox.Show(this, "Login failed. An unknown error occurred. Please try again.", "Login failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+					});
 					return;
 				}
 
