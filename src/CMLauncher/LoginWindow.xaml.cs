@@ -1,4 +1,5 @@
 using System.Windows;
+using System.ComponentModel;
 
 namespace CMLauncher
 {
@@ -39,12 +40,6 @@ namespace CMLauncher
 
 				DialogResult = true;
 				Close();
-
-				// Kick the application forward if this login happened during startup
-				if (System.Windows.Application.Current is CMLauncher.NET.App)
-				{
-					// Nothing else to do here; OnStartup will resume after ShowDialog() returns
-				}
 			}
 			catch
 			{
@@ -52,10 +47,16 @@ namespace CMLauncher
 			}
 		}
 
-		private void Cancel_Click(object sender, RoutedEventArgs e)
+		protected override void OnClosing(CancelEventArgs e)
 		{
-			DialogResult = false;
-			Close();
+			base.OnClosing(e);
+			// If the dialog wasn't accepted (no successful login), exit the app
+			if (DialogResult != true)
+			{
+				try { Application.Current.Shutdown(0); } catch { }
+				// Hard-exit as a fallback in case a message pump is still running
+				System.Environment.Exit(0);
+			}
 		}
 	}
 }
