@@ -28,7 +28,7 @@ namespace CMLauncher
 			{
 				Dispatcher.Invoke(() =>
 				{
-					MessageBox.Show(this, "Steam Guard confirmation required. Approve the sign-in in your Steam Mobile app. This screen will continue checking.", "Steam Guard", MessageBoxButton.OK, MessageBoxImage.Information);
+					MessageBox.Show(this, "Steam Guard confirmation required. Approve the sign-in in your Steam Mobile app, then click OK.", "Steam Guard", MessageBoxButton.OK, MessageBoxImage.Information);
 				});
 			}
 
