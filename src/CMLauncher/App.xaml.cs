@@ -10,21 +10,29 @@ namespace CMLauncher.NET
 		protected override void OnStartup(System.Windows.StartupEventArgs e)
 		{
 			base.OnStartup(e);
+
+			// Avoid shutting down while no window is open during login/auth
+			ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+
 			// Ask credentials if missing
 			if (string.IsNullOrWhiteSpace(CMLauncher.LauncherSettings.Current.SteamUsername) || string.IsNullOrWhiteSpace(CMLauncher.LauncherSettings.Current.SteamPassword))
 			{
-				PromptLogin();
+				while (!PromptLogin()) { }
 			}
 
-			// Verify credentials and detect ownership
-			var (ownsCmz, ownsCmw, authOk) = CMLauncher.InstallationService.TryAuthenticateAndDetectOwnership();
+			// Verify credentials and detect ownership using saved settings
+			var (ownsCmz, ownsCmw, authOk) = CMLauncher.InstallationService.TryAuthenticateAndDetectOwnership(
+				CMLauncher.LauncherSettings.Current.SteamUsername ?? string.Empty,
+				CMLauncher.LauncherSettings.Current.SteamPassword ?? string.Empty);
 			if (!authOk)
 			{
-				// Prompt to retry until user cancels or success
+				// Since there is no cancel, loop until success
 				while (true)
 				{
-					if (!PromptLogin()) break;
-					(ownsCmz, ownsCmw, authOk) = CMLauncher.InstallationService.TryAuthenticateAndDetectOwnership();
+					if (!PromptLogin()) continue;
+					(ownsCmz, ownsCmw, authOk) = CMLauncher.InstallationService.TryAuthenticateAndDetectOwnership(
+						CMLauncher.LauncherSettings.Current.SteamUsername ?? string.Empty,
+						CMLauncher.LauncherSettings.Current.SteamPassword ?? string.Empty);
 					if (authOk) break;
 				}
 			}
@@ -32,6 +40,19 @@ namespace CMLauncher.NET
 			CMLauncher.LauncherSettings.Current.OwnsCMZ = ownsCmz;
 			CMLauncher.LauncherSettings.Current.OwnsCMW = ownsCmw;
 			CMLauncher.LauncherSettings.Current.Save();
+
+			// Ensure main window is created and visible after successful login/auth
+			if (Current.MainWindow == null)
+			{
+				Current.MainWindow = new CMLauncher.MainWindow();
+			}
+			if (!Current.MainWindow.IsVisible)
+			{
+				Current.MainWindow.Show();
+			}
+
+			// Restore normal shutdown behavior
+			ShutdownMode = System.Windows.ShutdownMode.OnMainWindowClose;
 		}
 
 		private static bool PromptLogin()

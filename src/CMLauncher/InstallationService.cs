@@ -176,30 +176,49 @@ namespace CMLauncher
 			return target;
 		}
 
+		public static string? GetDepotDownloaderExePath()
+		{
+			try
+			{
+				var ddExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "depot-downloader", "DepotDownloader.exe");
+				if (!File.Exists(ddExe))
+				{
+					ddExe = Path.Combine(Directory.GetCurrentDirectory(), "depot-downloader", "DepotDownloader.exe");
+				}
+				return File.Exists(ddExe) ? ddExe : null;
+			}
+			catch { return null; }
+		}
+
+		private static string BuildCredentialArgs(string username, string password)
+		{
+			return $" -username {username} -password \"{password}\" -remember-password";
+		}
+
+		// Existing settings-based builder remains
 		private static string BuildCredentialArgs()
 		{
 			var u = LauncherSettings.Current.SteamUsername;
 			var p = LauncherSettings.Current.SteamPassword;
 			if (!string.IsNullOrWhiteSpace(u) && !string.IsNullOrWhiteSpace(p))
 			{
-				return $" -username {u} -password \"{p}\" -remember-password";
+				return BuildCredentialArgs(u, p);
 			}
 			return string.Empty;
 		}
 
-		public static (bool ownsCmz, bool ownsCmw, bool authOk) TryAuthenticateAndDetectOwnership()
+		public static (bool ownsCmz, bool ownsCmw, bool authOk) TryAuthenticateAndDetectOwnership(string username, string password)
 		{
 			bool ownsCmz = false, ownsCmw = false, authOk = false;
-			var ddExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "depot-downloader", "DepotDownloader.exe");
-			if (!File.Exists(ddExe)) ddExe = Path.Combine(Directory.GetCurrentDirectory(), "depot-downloader", "DepotDownloader.exe");
-			if (!File.Exists(ddExe)) return (false, false, false);
+			var ddExe = GetDepotDownloaderExePath();
+			if (string.IsNullOrWhiteSpace(ddExe)) return (false, false, false);
 
 			(string app, string depot)[] checks = new[] { (CMZAppId, "253431"), (CMWAppId, "675211") };
 			foreach (var (app, depot) in checks)
 			{
 				try
 				{
-					var creds = BuildCredentialArgs();
+					var creds = BuildCredentialArgs(username, password);
 					var psi = new ProcessStartInfo
 					{
 						FileName = ddExe,
