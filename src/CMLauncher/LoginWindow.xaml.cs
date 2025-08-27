@@ -6,6 +6,8 @@ namespace CMLauncher
 {
 	public partial class LoginWindow : Window
 	{
+		private bool _steamGuardPopupShown;
+
 		public LoginWindow()
 		{
 			InitializeComponent();
@@ -22,33 +24,32 @@ namespace CMLauncher
 				return;
 			}
 
-			// First do a lightweight auth-only probe to keep UI responsive
 			try
 			{
-				bool auth = await Task.Run(() => InstallationService.TryAuthenticateCredentials(u, p));
-				if (!auth)
+				void OnSteamGuard()
 				{
+					if (_steamGuardPopupShown) return;
+					_steamGuardPopupShown = true;
+					Dispatcher.Invoke(() =>
+					{
+						MessageBox.Show(this, "Steam Guard confirmation required. Approve the sign-in in your Steam Mobile app. This window will remain open. Click Login again after approval.", "Steam Guard", MessageBoxButton.OK, MessageBoxImage.Information);
+					});
+				}
+
+				var result = await Task.Run(() => InstallationService.TryAuthCredentialsWithCallback(u, p, OnSteamGuard));
+				if (!result.authOk)
+				{
+					if (result.steamGuard) return;
 					MessageBox.Show(this, "Invalid Steam credentials. Please try again.", "Login failed", MessageBoxButton.OK, MessageBoxImage.Error);
 					return;
 				}
 
-				// Save creds immediately
 				LauncherSettings.Current.SteamUsername = u;
 				LauncherSettings.Current.SteamPassword = p;
 				LauncherSettings.Current.Save();
 
-				// Close dialog to let app start fast
 				DialogResult = true;
 				Close();
-
-				// After the app starts, do ownership detection in background and persist
-				_ = Task.Run(() =>
-				{
-					var (ownsCmz, ownsCmw, _) = InstallationService.TryAuthenticateAndDetectOwnership(u, p);
-					LauncherSettings.Current.OwnsCMZ = ownsCmz;
-					LauncherSettings.Current.OwnsCMW = ownsCmw;
-					LauncherSettings.Current.Save();
-				});
 			}
 			catch
 			{
@@ -59,11 +60,9 @@ namespace CMLauncher
 		protected override void OnClosing(CancelEventArgs e)
 		{
 			base.OnClosing(e);
-			// If the dialog wasn't accepted (no successful login), exit the app
 			if (DialogResult != true)
 			{
 				try { Application.Current.Shutdown(0); } catch { }
-				// Hard-exit as a fallback in case a message pump is still running
 				System.Environment.Exit(0);
 			}
 		}

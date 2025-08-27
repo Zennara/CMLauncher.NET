@@ -1,6 +1,9 @@
+using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.Json;
+using System.Linq;
 
 namespace CMLauncher
 {
@@ -192,7 +195,7 @@ namespace CMLauncher
 
 		private static string BuildCredentialArgs(string username, string password)
 		{
-			return $" -username {username} -password \"{password}\" -remember-password";
+			return $" -username {username} -password \"{password}\"";
 		}
 
 		// Existing settings-based builder remains
@@ -207,35 +210,84 @@ namespace CMLauncher
 			return string.Empty;
 		}
 
-		public static (bool ownsCmz, bool ownsCmw, bool authOk) TryAuthenticateAndDetectOwnership(string username, string password)
+		private static bool ContainsSteamGuardPrompt(string text)
 		{
-			bool ownsCmz = false, ownsCmw = false, authOk = false;
+			if (string.IsNullOrEmpty(text)) return false;
+			return text.Contains("STEAM GUARD", StringComparison.OrdinalIgnoreCase)
+				|| text.Contains("Steam Guard", StringComparison.OrdinalIgnoreCase)
+				|| text.Contains("Use the Steam Mobile App to confirm your sign in", StringComparison.OrdinalIgnoreCase)
+				|| text.Contains("Please enter the 2-factor code", StringComparison.OrdinalIgnoreCase)
+				|| text.Contains("Two-factor code", StringComparison.OrdinalIgnoreCase)
+				|| text.Contains("Steam Guard code", StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static (string output, bool steamGuard) RunDepotProbe(string appId, string depotId, string username, string password, Action? onSteamGuardDetected)
+		{
 			var ddExe = GetDepotDownloaderExePath();
-			if (string.IsNullOrWhiteSpace(ddExe)) return (false, false, false);
+			if (string.IsNullOrWhiteSpace(ddExe)) return (string.Empty, false);
+
+			var creds = BuildCredentialArgs(username, password);
+			var psi = new ProcessStartInfo
+			{
+				FileName = ddExe,
+				Arguments = $"-app {appId} -depot {depotId}{creds} -manifest-only",
+				WorkingDirectory = Path.GetDirectoryName(ddExe) ?? AppDomain.CurrentDomain.BaseDirectory,
+				UseShellExecute = false,
+				RedirectStandardOutput = true,
+				RedirectStandardError = true,
+				CreateNoWindow = true
+			};
+
+			var sb = new StringBuilder();
+			bool steamGuard = false;
+			using var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
+			DataReceivedEventHandler onData = (_, e) =>
+			{
+				if (e.Data == null) return;
+				sb.AppendLine(e.Data);
+				if (!steamGuard && ContainsSteamGuardPrompt(e.Data))
+				{
+					steamGuard = true;
+					try { onSteamGuardDetected?.Invoke(); } catch { }
+					// Do NOT kill the process; let DepotDownloader continue listening for approval
+				}
+			};
+			p.OutputDataReceived += onData;
+			p.ErrorDataReceived += onData;
+
+			try
+			{
+				p.Start();
+				p.BeginOutputReadLine();
+				p.BeginErrorReadLine();
+				p.WaitForExit();
+			}
+			catch { }
+
+			return (sb.ToString(), steamGuard);
+		}
+
+		// Backward-compatible wrapper (no callback)
+		private static (string output, bool steamGuard) RunDepotProbe(string appId, string depotId, string username, string password)
+			=> RunDepotProbe(appId, depotId, username, password, null);
+
+		public static (bool ownsCmz, bool ownsCmw, bool authOk, bool steamGuard) TryAuthenticateAndDetectOwnershipDetailed(string username, string password, Action? onSteamGuardDetected)
+		{
+			bool ownsCmz = false, ownsCmw = false, authOk = false, steamGuard = false;
+			var ddExe = GetDepotDownloaderExePath();
+			if (string.IsNullOrWhiteSpace(ddExe)) return (false, false, false, false);
 
 			(string app, string depot)[] checks = new[] { (CMZAppId, "253431"), (CMWAppId, "675211") };
 			foreach (var (app, depot) in checks)
 			{
 				try
 				{
-					var creds = BuildCredentialArgs(username, password);
-					var psi = new ProcessStartInfo
-					{
-						FileName = ddExe,
-						Arguments = $"-app {app} -depot {depot}{creds} -manifest-only",
-						WorkingDirectory = Path.GetDirectoryName(ddExe) ?? AppDomain.CurrentDomain.BaseDirectory,
-						UseShellExecute = false,
-						RedirectStandardOutput = true,
-						RedirectStandardError = true,
-						CreateNoWindow = true
-					};
-					using var p = Process.Start(psi)!;
-					string output = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
-					p.WaitForExit();
+					var (output, sg) = RunDepotProbe(app, depot, username, password, onSteamGuardDetected);
+					if (sg) { steamGuard = true; /* do not early-return; allow process to finish after approval */ }
 					if (output.Contains("Failed to authenticate", StringComparison.OrdinalIgnoreCase) || output.Contains("InvalidPassword", StringComparison.OrdinalIgnoreCase))
 					{
 						authOk = false;
-						return (false, false, false);
+						return (false, false, false, steamGuard);
 					}
 					if (output.Contains("Got depot key", StringComparison.OrdinalIgnoreCase) || output.Contains("Processing depot", StringComparison.OrdinalIgnoreCase))
 					{
@@ -249,38 +301,84 @@ namespace CMLauncher
 				}
 				catch { }
 			}
-			return (ownsCmz, ownsCmw, authOk);
+			return (ownsCmz, ownsCmw, authOk, steamGuard);
 		}
 
-		public static bool TryAuthenticateCredentials(string username, string password)
+		// Existing method now delegates to overload with no callback
+		public static (bool ownsCmz, bool ownsCmw, bool authOk, bool steamGuard) TryAuthenticateAndDetectOwnershipDetailed(string username, string password)
+			=> TryAuthenticateAndDetectOwnershipDetailed(username, password, null);
+
+		public static (bool authOk, bool steamGuard) TryAuthCredentialsWithCallback(string username, string password, Action? onSteamGuardDetected)
 		{
-			var ddExe = GetDepotDownloaderExePath();
-			if (string.IsNullOrWhiteSpace(ddExe)) return false;
+			var (output, sg) = RunDepotProbe(CMZAppId, "253431", username, password, onSteamGuardDetected);
+			if (output.Contains("Failed to authenticate", StringComparison.OrdinalIgnoreCase) || output.Contains("InvalidPassword", StringComparison.OrdinalIgnoreCase))
+				return (false, sg);
+			// If DepotDownloader is waiting for Steam Guard approval, sg == true; let caller handle UX.
+			return (true, sg);
+		}
+
+		public static string? GetSteamInstallPath(string gameKey)
+		{
+			return LauncherSettings.Current.GetSteamPathForGame(gameKey) ?? SteamLocator.FindGamePath(GetAppId(gameKey));
+		}
+
+		public static string? GetSteamExePath(string gameKey)
+		{
+			var baseDir = GetSteamInstallPath(gameKey);
+			if (string.IsNullOrWhiteSpace(baseDir)) return null;
+			var exeName = GetExeName(gameKey);
+			var path = Path.Combine(baseDir, exeName);
+			return File.Exists(path) ? path : null;
+		}
+
+		public static string? GetSteamExeVersion(string gameKey)
+		{
 			try
 			{
-				// Use CMZ app/depot as a lightweight auth probe
-				var creds = BuildCredentialArgs(username, password);
-				var psi = new ProcessStartInfo
-				{
-					FileName = ddExe,
-					Arguments = $"-app {CMZAppId} -depot 253431{creds} -manifest-only",
-					WorkingDirectory = Path.GetDirectoryName(ddExe) ?? AppDomain.CurrentDomain.BaseDirectory,
-					UseShellExecute = false,
-					RedirectStandardOutput = true,
-					RedirectStandardError = true,
-					CreateNoWindow = true
-				};
-				using var p = Process.Start(psi)!;
-				string output = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
-				p.WaitForExit();
-				if (output.Contains("Failed to authenticate", StringComparison.OrdinalIgnoreCase) || output.Contains("InvalidPassword", StringComparison.OrdinalIgnoreCase))
-				{
-					return false;
-				}
-				// Any other outcome means credentials worked (even if app not owned)
-				return true;
+				var exe = GetSteamExePath(gameKey);
+				if (string.IsNullOrWhiteSpace(exe)) return null;
+				var info = FileVersionInfo.GetVersionInfo(exe);
+				return !string.IsNullOrWhiteSpace(info.FileVersion) ? info.FileVersion : info.ProductVersion;
 			}
-			catch { return false; }
+			catch { return null; }
+		}
+
+		private static string? GetSteamMetaPath(string gameKey)
+		{
+			var dir = GetSteamInstallPath(gameKey);
+			if (string.IsNullOrWhiteSpace(dir)) return null;
+			return Path.Combine(dir, "cm_launcher_installation-info.json");
+		}
+
+		public static DateTime? GetSteamLastPlayed(string gameKey)
+		{
+			try
+			{
+				var meta = GetSteamMetaPath(gameKey);
+				if (meta == null || !File.Exists(meta)) return null;
+				var json = File.ReadAllText(meta);
+				var doc = JsonSerializer.Deserialize<SteamInfoFile>(json);
+				if (doc != null && !string.IsNullOrWhiteSpace(doc.timestamp) && DateTime.TryParse(doc.timestamp, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+				{
+					return dt;
+				}
+			}
+			catch { }
+			return null;
+		}
+
+		public static void MarkSteamLaunched(string gameKey)
+		{
+			try
+			{
+				var meta = GetSteamMetaPath(gameKey);
+				if (meta == null) return;
+				var now = DateTime.UtcNow;
+				var doc = new SteamInfoFile { timestamp = now.ToString("o") };
+				var json = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
+				File.WriteAllText(meta, json);
+			}
+			catch { }
 		}
 
 		public static InstallationInfo CreateInstallation(string gameKey, string name, string version, string? iconName = null)
@@ -302,7 +400,6 @@ namespace CMLauncher
 			Directory.CreateDirectory(gameDir);
 			Directory.CreateDirectory(Path.Combine(candidatePath, "Data"));
 
-			// Choose a random icon if none provided
 			if (string.IsNullOrWhiteSpace(iconName))
 			{
 				var icons = LoadAvailableIcons();
@@ -313,7 +410,6 @@ namespace CMLauncher
 				}
 			}
 
-			// Steam Version: prefer copying from actual Steam install path
 			var versionSource = Path.Combine(GetVersionsPath(gameKey), version);
 			if (string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
 			{
@@ -326,7 +422,6 @@ namespace CMLauncher
 			}
 			else
 			{
-				// version may be manifest or manifest|branch
 				var parts = version.Split('|');
 				var manifest = parts[0];
 				var branch = parts.Length > 1 ? parts[1] : "public";
@@ -336,7 +431,6 @@ namespace CMLauncher
 				}
 			}
 
-			// Copy version files into Game if a matching source exists
 			try
 			{
 				if (Directory.Exists(versionSource))
@@ -357,13 +451,13 @@ namespace CMLauncher
 			};
 
 			var infoFile = Path.Combine(candidatePath, "installation-info.json");
-			var json = JsonSerializer.Serialize(new InstallationInfoFile
+			var json2 = JsonSerializer.Serialize(new InstallationInfoFile
 			{
 				version = version,
 				timestamp = null,
 				icon = iconName
 			}, new JsonSerializerOptions { WriteIndented = true });
-			File.WriteAllText(infoFile, json);
+			File.WriteAllText(infoFile, json2);
 
 			EnsureSteamAppId(gameKey, gameDir);
 
@@ -379,10 +473,7 @@ namespace CMLauncher
 					Directory.Delete(info.RootPath, true);
 				}
 			}
-			catch
-			{
-				// ignore IO errors for now
-			}
+			catch { }
 		}
 
 		public static InstallationInfo DuplicateInstallation(InstallationInfo info)
@@ -452,7 +543,6 @@ namespace CMLauncher
 
 		public static void UpdateInstallationVersion(InstallationInfo info, string version)
 		{
-			// Clear Game folder
 			var gameDir = Path.Combine(info.RootPath, "Game");
 			try
 			{
@@ -464,7 +554,6 @@ namespace CMLauncher
 			}
 			catch { }
 
-			// Prefer Steam install for Steam Version
 			string versionSource = Path.Combine(GetVersionsPath(info.GameKey), version);
 			if (string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
 			{
@@ -499,16 +588,15 @@ namespace CMLauncher
 			}
 			catch { }
 
-			// Update info file
-			var path = Path.Combine(info.RootPath, "installation-info.json");
-			var doc = ReadInfoFile(path) ?? new InstallationInfoFile();
-			doc.version = version;
-			WriteInfoFile(path, doc);
+			var path2 = Path.Combine(info.RootPath, "installation-info.json");
+			var doc2 = ReadInfoFile(path2) ?? new InstallationInfoFile();
+			doc2.version = version;
+			WriteInfoFile(path2, doc2);
 		}
 
 		public static void DownloadGameVersion(InstallationInfo info, string version)
 		{
-			// Placeholder: intentionally do nothing for now
+			// Placeholder
 		}
 
 		public static void MarkInstallationLaunched(InstallationInfo info)
@@ -569,95 +657,29 @@ namespace CMLauncher
 			}
 		}
 
-		public static string? GetSteamInstallPath(string gameKey)
-		{
-			// Prefer user-saved path, then detected
-			return LauncherSettings.Current.GetSteamPathForGame(gameKey) ?? SteamLocator.FindGamePath(GetAppId(gameKey));
-		}
-
-		public static string? GetSteamExePath(string gameKey)
-		{
-			var baseDir = GetSteamInstallPath(gameKey);
-			if (string.IsNullOrWhiteSpace(baseDir)) return null;
-			var exeName = GetExeName(gameKey);
-			var path = Path.Combine(baseDir, exeName);
-			return File.Exists(path) ? path : null;
-		}
-
-		public static string? GetSteamExeVersion(string gameKey)
-		{
-			try
-			{
-				var exe = GetSteamExePath(gameKey);
-				if (string.IsNullOrWhiteSpace(exe)) return null;
-				var info = FileVersionInfo.GetVersionInfo(exe);
-				// Prefer FileVersion; fallback to ProductVersion
-				return !string.IsNullOrWhiteSpace(info.FileVersion) ? info.FileVersion : info.ProductVersion;
-			}
-			catch { return null; }
-		}
-
-		private static string? GetSteamMetaPath(string gameKey)
-		{
-			var dir = GetSteamInstallPath(gameKey);
-			if (string.IsNullOrWhiteSpace(dir)) return null;
-			return Path.Combine(dir, "cm_launcher_installation-info.json");
-		}
-
-		public static DateTime? GetSteamLastPlayed(string gameKey)
-		{
-			try
-			{
-				var meta = GetSteamMetaPath(gameKey);
-				if (meta == null || !File.Exists(meta)) return null;
-				var json = File.ReadAllText(meta);
-				var doc = JsonSerializer.Deserialize<SteamInfoFile>(json);
-				if (doc != null && !string.IsNullOrWhiteSpace(doc.timestamp) && DateTime.TryParse(doc.timestamp, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
-				{
-					return dt;
-				}
-			}
-			catch { }
-			return null;
-		}
-
-		public static void MarkSteamLaunched(string gameKey)
-		{
-			try
-			{
-				var meta = GetSteamMetaPath(gameKey);
-				if (meta == null) return;
-				var now = DateTime.UtcNow;
-				var doc = new SteamInfoFile { timestamp = now.ToString("o") };
-				var json = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
-				File.WriteAllText(meta, json);
-			}
-			catch { }
-		}
-
 		private class SteamInfoFile
 		{
 			public string? timestamp { get; set; }
 		}
 	}
+}
 
-	public class InstallationInfo
-	{
-		public string GameKey { get; set; } = string.Empty;
-		public string Name { get; set; } = string.Empty;
-		public string Version { get; set; } = string.Empty;
-		public DateTime? Timestamp { get; set; }
-		public string RootPath { get; set; } = string.Empty;
-		public string? IconName { get; set; }
+public class InstallationInfo
+{
+	public string GameKey { get; set; } = string.Empty;
+	public string Name { get; set; } = string.Empty;
+	public string Version { get; set; } = string.Empty;
+	public DateTime? Timestamp { get; set; }
+	public string RootPath { get; set; } = string.Empty;
+	public string? IconName { get; set; }
 
-		public string GamePath => Path.Combine(RootPath, "Game");
-		public string DataPath => Path.Combine(RootPath, "Data");
-	}
+	public string GamePath => Path.Combine(RootPath, "Game");
+	public string DataPath => Path.Combine(RootPath, "Data");
+}
 
-	internal class InstallationInfoFile
-	{
-		public string? version { get; set; }
-		public string? timestamp { get; set; }
-		public string? icon { get; set; }
-	}
+internal class InstallationInfoFile
+{
+	public string? version { get; set; }
+	public string? timestamp { get; set; }
+	public string? icon { get; set; }
 }

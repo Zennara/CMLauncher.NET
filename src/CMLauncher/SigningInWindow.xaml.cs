@@ -24,11 +24,19 @@ namespace CMLauncher
 		private async void SigningInWindow_Loaded(object sender, RoutedEventArgs e)
 		{
 			StatusText.Text = "Checking ownership...";
-			var result = await Task.Run(() => InstallationService.TryAuthenticateAndDetectOwnership(_username, _password));
+			void OnSteamGuard()
+			{
+				Dispatcher.Invoke(() =>
+				{
+					MessageBox.Show(this, "Steam Guard confirmation required. Approve the sign-in in your Steam Mobile app. This screen will continue checking.", "Steam Guard", MessageBoxButton.OK, MessageBoxImage.Information);
+				});
+			}
+
+			var result = await Task.Run(() => InstallationService.TryAuthenticateAndDetectOwnershipDetailed(_username, _password, OnSteamGuard));
 			AuthOk = result.authOk;
 			OwnsCmz = result.ownsCmz;
 			OwnsCmw = result.ownsCmw;
-			DialogResult = true; // Close dialog and let the caller read properties
+			DialogResult = true;
 		}
 	}
 }
