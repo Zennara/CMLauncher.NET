@@ -64,7 +64,6 @@
 
 	<!-- NuGet dependencies -->
 	<ItemGroup>
-		<PackageReference Include="DepotDownloaderLib" Version="1.1.1" />
 		<PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
 		<PackageReference Include="AutoUpdater.NET.Official" Version="1.9.2" />
 	</ItemGroup>

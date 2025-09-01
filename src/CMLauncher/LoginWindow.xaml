@@ -4,24 +4,24 @@
         Title="Steam Login" Height="220" Width="420"
         WindowStartupLocation="CenterOwner"
         Background="#1B1B1B" Foreground="White">
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <TextBlock Text="Enter your Steam credentials for DepotDownloader" Margin="0,0,0,8"/>
-        <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,4,0,0">
-            <TextBlock Text="Username" Width="90" VerticalAlignment="Center"/>
-            <TextBox x:Name="UsernameBox" Width="260"/>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0,4,0,0">
-            <TextBlock Text="Password" Width="90" VerticalAlignment="Center"/>
-            <PasswordBox x:Name="PasswordBox" Width="260"/>
-        </StackPanel>
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Login" Padding="12,6" Click="Save_Click"/>
-        </StackPanel>
-    </Grid>
+	<Grid Margin="16">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+		<TextBlock Text="Enter your Steam credentials for DepotDownloader" Margin="0,0,0,8"/>
+		<StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,4,0,0">
+			<TextBlock Text="Username" Width="90" VerticalAlignment="Center"/>
+			<TextBox x:Name="UsernameBox" Width="260"/>
+		</StackPanel>
+		<StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0,4,0,0">
+			<TextBlock Text="Password" Width="90" VerticalAlignment="Center"/>
+			<PasswordBox x:Name="PasswordBox" Width="260"/>
+		</StackPanel>
+		<StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,42,10,25" Width="82">
+			<Button Content="Login" Padding="12,6" Click="Save_Click"/>
+		</StackPanel>
+	</Grid>
 </Window>
