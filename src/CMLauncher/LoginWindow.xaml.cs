@@ -1,6 +1,6 @@
-using System.Windows;
 using System.ComponentModel;
-using System.Threading.Tasks;
+using System.Diagnostics;
+using System.Windows;
 
 namespace CMLauncher
 {
@@ -16,61 +16,98 @@ namespace CMLauncher
 
 		private async void Save_Click(object sender, RoutedEventArgs e)
 		{
-			var u = UsernameBox.Text?.Trim() ?? string.Empty;
-			var p = PasswordBox.Password ?? string.Empty;
+			var u = UsernameBox.Text?.Trim() ?? "";
+			var p = PasswordBox.Password ?? "";
+
 			if (string.IsNullOrWhiteSpace(u) || string.IsNullOrWhiteSpace(p))
 			{
 				MessageBox.Show(this, "Please enter username and password.", "Login", MessageBoxButton.OK, MessageBoxImage.Warning);
 				return;
 			}
 
-			try
+			LauncherSettings.Current.SteamUsername = u;
+			LauncherSettings.Current.SteamPassword = p;
+
+			Debug.WriteLine("Starting DepotDownloader login test...");
+
+			var path = "depot-downloader/DepotDownloader.exe";
+			var args = $"-app 253430 -depot 253431 -username {u} -password {p} -manifest-only";
+
+			var outputLines = new List<string>();
+			var process = new Process();
+			process.StartInfo.FileName = path;
+			process.StartInfo.Arguments = args;
+			process.StartInfo.UseShellExecute = false;
+			process.StartInfo.CreateNoWindow = true;
+			process.StartInfo.RedirectStandardOutput = true;
+			process.StartInfo.RedirectStandardError = true;
+			process.StartInfo.RedirectStandardInput = true;
+
+			CancellationTokenSource stallCts = new CancellationTokenSource();
+
+			void ResetStallTimer()
 			{
-				string? PromptForGuard()
+				stallCts.Cancel();
+				stallCts = new CancellationTokenSource();
+				var token = stallCts.Token;
+
+				Task.Run(async () =>
 				{
-					string? code = null;
-					Dispatcher.Invoke(() =>
+					try
 					{
-						string hint = "Enter the Steam Guard code sent to your email or from your mobile app.";
-						var w = new SteamGuardPromptWindow(hint) { Owner = this };
-						var ok = w.ShowDialog();
-						code = ok == true ? w.GuardCode : null;
-					});
-					return code;
-				}
-
-				void OnRateLimit()
-				{
-					if (_rateLimitPopupShown) return;
-					_rateLimitPopupShown = true;
-					Dispatcher.Invoke(() =>
-					{
-						MessageBox.Show(this, "Steam is rate limiting sign-ins right now. Please wait a minute and try again.", "Rate limited", MessageBoxButton.OK, MessageBoxImage.Warning);
-					});
-				}
-
-				var result = await Task.Run(() => InstallationService.TryAuthCredentialsWithGuard(u, p, PromptForGuard, OnRateLimit));
-				if (!result.authOk)
-				{
-					Dispatcher.Invoke(() =>
-					{
-						MessageBox.Show(this, "Login failed. An unknown error occurred. Please try again.", "Login failed", MessageBoxButton.OK, MessageBoxImage.Warning);
-					});
-					return;
-				}
-
-				LauncherSettings.Current.SteamUsername = u;
-				LauncherSettings.Current.SteamPassword = p;
-				LauncherSettings.Current.Save();
-
-				DialogResult = true;
-				Close();
+						await Task.Delay(3000, token);
+						if (!token.IsCancellationRequested)
+						{
+							// Waiting for Steam Guard input from email.
+						}
+					}
+					catch (TaskCanceledException) { /* ignored */ }
+				});
 			}
-			catch
+
+			ResetStallTimer();
+
+			process.OutputDataReceived += (sender2, e2) =>
 			{
-				MessageBox.Show(this, "Failed to validate credentials. Ensure DepotDownloader is available.", "Login error", MessageBoxButton.OK, MessageBoxImage.Error);
-			}
+				if (string.IsNullOrEmpty(e2.Data)) return;
+
+				outputLines.Add(e2.Data);
+				Debug.WriteLine("[OUT] " + e2.Data);
+
+				ResetStallTimer();
+
+				if (e2.Data.Contains("Steam Guard", StringComparison.OrdinalIgnoreCase))
+				{
+					// Steam Guard mobile detected,
+				}
+
+				// TODO: Other checks like invalid password, rate limit, success, etc.
+			};
+
+			process.ErrorDataReceived += (sender2, e2) =>
+			{
+				if (string.IsNullOrEmpty(e2.Data)) return;
+
+				outputLines.Add(e2.Data);
+				Debug.WriteLine("[ERR] " + e2.Data);
+
+				ResetStallTimer();
+			};
+
+			process.Start();
+			process.BeginOutputReadLine();
+			process.BeginErrorReadLine();
+
+			await process.WaitForExitAsync();
+
+			Debug.WriteLine($"DepotDownloader finished with exit code {process.ExitCode}");
+			Debug.WriteLine($"Total lines captured: {outputLines.Count}");
+
+			DialogResult = true;
+			Close();
 		}
+
+
 
 		protected override void OnClosing(CancelEventArgs e)
 		{

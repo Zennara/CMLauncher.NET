@@ -498,7 +498,7 @@ namespace CMLauncher
 					var psi = new ProcessStartInfo
 					{
 						FileName = ddExe,
-						Arguments = $"-app {appId} -depot {depotId} -manifest {manifestId}{branchArg}{creds} -dir \"{target}\"",
+						Arguments = $"-app {appId} -depot {depotId} -manifest {manifestId}{branchArg}{creds} -remember-password -dir \"{target}\"",
 						WorkingDirectory = Path.GetDirectoryName(ddExe) ?? AppDomain.CurrentDomain.BaseDirectory,
 						UseShellExecute = false,
 						CreateNoWindow = true,
