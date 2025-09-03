@@ -1,6 +1,41 @@
 [
 	{
 		"version": "",
+		"manifest_id": "4451772915347819054",
+		"branch": "public",
+		"timestamp": "2025-09-01T05:57:13+00:00",
+		"changelog": []
+	},
+	{
+		"version": "",
+		"manifest_id": "3787621710012297637",
+		"branch": "public",
+		"timestamp": "2025-08-31T17:43:22+00:00",
+		"changelog": []
+	},
+	{
+		"version": "",
+		"manifest_id": "553069917908858731",
+		"branch": "public",
+		"timestamp": "2025-08-31T01:41:06+00:00",
+		"changelog": []
+	},
+	{
+		"version": "",
+		"manifest_id": "90678175437691491",
+		"branch": "public",
+		"timestamp": "2025-08-30T00:38:58+00:00",
+		"changelog": []
+	},
+	{
+		"version": "",
+		"manifest_id": "6940602386840828210",
+		"branch": "public",
+		"timestamp": "2025-08-29T18:46:38+00:00",
+		"changelog": []
+	},
+	{
+		"version": "",
 		"manifest_id": "6779943524553392149",
 		"branch": "public",
 		"timestamp": "2025-08-25T09:32:57+00:00",
