@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Animation;
 
 namespace CMLauncher
 {
@@ -31,6 +32,7 @@ namespace CMLauncher
 
 			// Prevent double-clicks while processing
 			LoginButton.IsEnabled = false;
+			ShowActivity("Logging in...");
 
 			Debug.WriteLine("Starting DepotDownloader login test...");
 
@@ -75,9 +77,11 @@ namespace CMLauncher
 				{
 					await Dispatcher.InvokeAsync(async () =>
 					{
+						ShowActivity("Enter code from email...");
 						var code = ShowInputDialog("Steam Guard Code", "Enter the Steam Guard code sent to your email:");
 						if (!string.IsNullOrWhiteSpace(code))
 						{
+							ShowActivity("Checking 2FA code...");
 							try { await process.StandardInput.WriteLineAsync(code); } catch { }
 						}
 					});
@@ -98,7 +102,7 @@ namespace CMLauncher
 				{
 					try
 					{
-						await Task.Delay(3000, token);
+						await Task.Delay(5000, token);
 						if (!token.IsCancellationRequested)
 						{
 							// Only prompt once and not after wrong code
@@ -131,6 +135,7 @@ namespace CMLauncher
 					{
 						StatusText.Text = "Waiting for Steam Guard Mobile...";
 						StatusText.Visibility = Visibility.Visible;
+						ShowActivity("Waiting for Steam Guard Mobile...");
 					});
 				}
 
@@ -158,7 +163,7 @@ namespace CMLauncher
 				}
 				else if (!codeWrong && line.IndexOf("Please enter the auth code", StringComparison.OrdinalIgnoreCase) >= 0)
 				{
-					// Immediate prompt when process asks for code (only once)
+					ShowActivity("Enter code from email...");
 					_ = PromptForEmailCodeAsync();
 				}
 			}
@@ -196,7 +201,8 @@ namespace CMLauncher
 				return;
 			}
 
-			// Failure: inform user and allow retry
+			// Failure UI
+			HideActivity();
 			if (invalidPassword)
 			{
 				MessageBox.Show(this, "Invalid username or password. Please try again.", "Login Failed", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -217,6 +223,25 @@ namespace CMLauncher
 			// Reset UI for retry
 			StatusText.Visibility = Visibility.Collapsed;
 			LoginButton.IsEnabled = true;
+		}
+
+		private void ShowActivity(string message)
+		{
+			var sb = TryFindResource("SpinnerStoryboard") as Storyboard;
+			ActivityText.Visibility = Visibility.Visible;
+			ActivityText.Text = message;
+			ActivitySpinner.Visibility = Visibility.Visible;
+			// Begin storyboard using ActivitySpinner as the containing namescope so TargetName resolves
+			sb?.Begin(ActivitySpinner, isControllable: true);
+		}
+
+		private void HideActivity()
+		{
+			var sb = TryFindResource("SpinnerStoryboard") as Storyboard;
+			// Stop against the same element used to start
+			sb?.Stop(ActivitySpinner);
+			ActivitySpinner.Visibility = Visibility.Collapsed;
+			ActivityText.Visibility = Visibility.Collapsed;
 		}
 
 		private string? ShowInputDialog(string title, string message)
