@@ -50,8 +50,7 @@ namespace CMLauncher
 			process.StartInfo.RedirectStandardInput = true;
 
 			// Configure success/failure markers
-			// TODO: Change this to the exact success line printed by your DepotDownloader build
-			const string RequiredSuccessFragment = "licenses for account!"; // CHANGE ME if needed
+			const string RequiredSuccessFragment = "licenses for account!";
 			bool sawRequiredOutput = false;
 			bool invalidPassword = false;
 			bool rateLimited = false;

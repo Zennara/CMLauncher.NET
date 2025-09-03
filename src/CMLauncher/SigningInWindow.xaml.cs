@@ -25,30 +25,28 @@ namespace CMLauncher
 		{
 			StatusText.Text = "Checking ownership...";
 
-			string? PromptForGuard()
+			void OnLine(string line)
 			{
-				string? code = null;
-				Dispatcher.Invoke(() =>
-				{
-					var w = new SteamGuardPromptWindow("A Steam Guard code is required to verify ownership. Enter code:") { Owner = this };
-					var ok = w.ShowDialog();
-					code = ok == true ? w.GuardCode : null;
-				});
-				return code;
+				Dispatcher.Invoke(() => StatusText.Text = line);
 			}
 
-			void OnRateLimit()
+			var (ownsCmz, ownsCmw, authOk, accessDenied) = await InstallationService.TryAuthenticateAndDetectOwnershipWithTokenAsync(_username, OnLine);
+
+			if (accessDenied)
 			{
-				Dispatcher.Invoke(() =>
-				{
-					MessageBox.Show(this, "Steam is rate limiting sign-ins right now. Please wait a minute and try again.", "Rate limited", MessageBoxButton.OK, MessageBoxImage.Warning);
-				});
+				// Clear saved credentials and show login again
+				LauncherSettings.Current.SteamUsername = string.Empty;
+				LauncherSettings.Current.SteamPassword = string.Empty;
+				LauncherSettings.Current.Save();
+				MessageBox.Show(this, "Saved login token was rejected. Please sign in again.", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+				AuthOk = false;
+				DialogResult = false;
+				return;
 			}
 
-			var result = await Task.Run(() => InstallationService.TryAuthenticateAndDetectOwnershipWithGuard(_username, _password, PromptForGuard, OnRateLimit));
-			AuthOk = result.authOk;
-			OwnsCmz = result.ownsCmz;
-			OwnsCmw = result.ownsCmw;
+			AuthOk = authOk;
+			OwnsCmz = ownsCmz;
+			OwnsCmw = ownsCmw;
 			DialogResult = true;
 		}
 	}
