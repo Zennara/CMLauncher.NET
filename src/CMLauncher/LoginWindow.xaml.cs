@@ -51,7 +51,7 @@ namespace CMLauncher
 
 			// Configure success/failure markers
 			// TODO: Change this to the exact success line printed by your DepotDownloader build
-			const string RequiredSuccessFragment = "Done!"; // CHANGE ME if needed
+			const string RequiredSuccessFragment = "licenses for account!"; // CHANGE ME if needed
 			bool sawRequiredOutput = false;
 			bool invalidPassword = false;
 			bool rateLimited = false;
@@ -60,13 +60,15 @@ namespace CMLauncher
 			bool promptOpen = false;
 			object promptLock = new();
 			bool killRequested = false;
+			bool inputCheckEnabled = false; // enable stall-based prompt only after we see the login line
+			bool mobileGuardDetected = false; // suppress email prompt when mobile confirmation is requested
 
 			CancellationTokenSource stallCts = new CancellationTokenSource();
 
 			async Task PromptForEmailCodeAsync()
 			{
-				// Suppress prompts once a wrong code was detected
-				if (codeWrong) return;
+				// Suppress prompts once a wrong code was detected or mobile guard requested
+				if (codeWrong || mobileGuardDetected) return;
 				lock (promptLock)
 				{
 					if (promptOpen || emailPromptShown) return;
@@ -94,6 +96,8 @@ namespace CMLauncher
 
 			void ResetStallTimer()
 			{
+				// Do not run stall-based checks until login line appears, or when mobile guard is requested
+				if (!inputCheckEnabled || mobileGuardDetected) return;
 				stallCts.Cancel();
 				stallCts = new CancellationTokenSource();
 				var token = stallCts.Token;
@@ -105,8 +109,8 @@ namespace CMLauncher
 						await Task.Delay(5000, token);
 						if (!token.IsCancellationRequested)
 						{
-							// Only prompt once and not after wrong code
-							if (!emailPromptShown && !codeWrong)
+							// Only prompt once and not after wrong code or mobile guard
+							if (!emailPromptShown && !codeWrong && !mobileGuardDetected)
 							{
 								await PromptForEmailCodeAsync();
 							}
@@ -116,26 +120,50 @@ namespace CMLauncher
 				});
 			}
 
-			ResetStallTimer();
+			// NOTE: do not start stall timer until we know we are in login phase
+			// ResetStallTimer();
 
 			void HandleLine(string line)
 			{
 				outputLines.Add(line);
 				Debug.WriteLine(line);
-				ResetStallTimer();
+
+				// Enable stall-based input prompt only after we see the login message
+				var lower = line.ToLowerInvariant();
+				if (!inputCheckEnabled && lower.Contains("logging '") && lower.Contains(" into steam3"))
+				{
+					inputCheckEnabled = true;
+					ResetStallTimer();
+				}
+				else if (inputCheckEnabled)
+				{
+					ResetStallTimer();
+				}
 
 				if (line.IndexOf(RequiredSuccessFragment, StringComparison.OrdinalIgnoreCase) >= 0)
 					sawRequiredOutput = true;
 
-				// Steam Guard mobile informational text
-				if (line.IndexOf("Steam Guard", StringComparison.OrdinalIgnoreCase) >= 0 &&
+				// Detect explicit Mobile App confirmation message: suppress email prompts
+				if (!mobileGuardDetected && (lower.Contains("use the steam mobile app") || lower.Contains("steam mobile app") || (lower.Contains("mobile") && lower.Contains("confirm your sign in"))))
+				{
+					mobileGuardDetected = true;
+					Dispatcher.Invoke(() =>
+					{
+						StatusText.Text = "Please accept the login request with Steam Guard";
+						StatusText.Visibility = Visibility.Visible;
+						ShowActivity("Waiting for Steam Guard...");
+					});
+				}
+
+				// Steam Guard generic informational text
+				if (!mobileGuardDetected && line.IndexOf("Steam Guard", StringComparison.OrdinalIgnoreCase) >= 0 &&
 					line.IndexOf("auth code", StringComparison.OrdinalIgnoreCase) < 0)
 				{
 					Dispatcher.Invoke(() =>
 					{
-						StatusText.Text = "Waiting for Steam Guard Mobile...";
+						StatusText.Text = "Please accept the login request with Steam Guard";
 						StatusText.Visibility = Visibility.Visible;
-						ShowActivity("Waiting for Steam Guard Mobile...");
+						ShowActivity("Waiting for Steam Guard...");
 					});
 				}
 
@@ -161,9 +189,9 @@ namespace CMLauncher
 						try { if (!process.HasExited) process.Kill(entireProcessTree: true); } catch { }
 					}
 				}
-				else if (!codeWrong && line.IndexOf("Please enter the auth code", StringComparison.OrdinalIgnoreCase) >= 0)
+				else if (!codeWrong && !mobileGuardDetected && line.IndexOf("Please enter the auth code", StringComparison.OrdinalIgnoreCase) >= 0)
 				{
-					ShowActivity("Enter code from email...");
+					Dispatcher.Invoke(() => ShowActivity("Enter code from email..."));
 					_ = PromptForEmailCodeAsync();
 				}
 			}
@@ -220,13 +248,13 @@ namespace CMLauncher
 				MessageBox.Show(this, "An unknown error occurred while logging in. ", "Login Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
 			}
 
-			// Reset UI for retry
 			StatusText.Visibility = Visibility.Collapsed;
 			LoginButton.IsEnabled = true;
 		}
 
 		private void ShowActivity(string message)
 		{
+			if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(() => ShowActivity(message)); return; }
 			var sb = TryFindResource("SpinnerStoryboard") as Storyboard;
 			ActivityText.Visibility = Visibility.Visible;
 			ActivityText.Text = message;
@@ -237,6 +265,7 @@ namespace CMLauncher
 
 		private void HideActivity()
 		{
+			if (!Dispatcher.CheckAccess()) { Dispatcher.Invoke(HideActivity); return; }
 			var sb = TryFindResource("SpinnerStoryboard") as Storyboard;
 			// Stop against the same element used to start
 			sb?.Stop(ActivitySpinner);
