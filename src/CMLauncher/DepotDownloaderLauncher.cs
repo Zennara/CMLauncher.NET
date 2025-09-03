@@ -1,14 +1,12 @@
-using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 public class DepotDownloaderWrapper
 {
 	private readonly string _exePath;
 	private Process? _process;
 
+	// Single event for both stdout and stderr
 	public event Action<string>? OutputReceived;
-	public event Action<string>? ErrorReceived;
 
 	public DepotDownloaderWrapper(string exePath)
 	{
@@ -30,17 +28,16 @@ public class DepotDownloaderWrapper
 
 		_process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
 
-		_process.OutputDataReceived += (sender, e) =>
-		{
-			if (string.IsNullOrEmpty(e.Data)) return;
-
-			OutputReceived?.Invoke(e.Data);
-		};
-
-		_process.ErrorDataReceived += (sender, e) =>
+		_process.OutputDataReceived += (s, e) =>
 		{
 			if (!string.IsNullOrEmpty(e.Data))
-				ErrorReceived?.Invoke(e.Data);
+				OutputReceived?.Invoke(e.Data);
+		};
+
+		_process.ErrorDataReceived += (s, e) =>
+		{
+			if (!string.IsNullOrEmpty(e.Data))
+				OutputReceived?.Invoke(e.Data); // send error lines to same OutputReceived
 		};
 
 		_process.Start();
