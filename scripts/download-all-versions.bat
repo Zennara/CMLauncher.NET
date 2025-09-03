@@ -8,6 +8,10 @@ set USER=fireking120
 set "beta_folders=%temp%\beta_folders.txt"
 if exist "%beta_folders%" del "%beta_folders%"
 
+:: Mapping of manifest_id -> version (for later JSON patch)
+set "manifest_version_map=%temp%\manifest_version_map.txt"
+if exist "%manifest_version_map%" del "%manifest_version_map%"
+
 for /f "tokens=* delims=" %%M in (manifests.txt) do (
     set "manifest=%%M"
     
@@ -227,6 +231,12 @@ for /d %%F in (*) do (
                 )
                 move /y "!temp_log!" "%rename_log%" >nul
             )
+
+            :: Record mapping manifest_id -> version (keep full final name, including -beta and b{num})
+            set "manifest_id=!current_folder!"
+            if /i "!is_beta!"=="true" set "manifest_id=!manifest_id:~0,-4!"
+            set "version_for_json=!final_name!"
+            echo !manifest_id!:!version_for_json!>> "%manifest_version_map%"
         ) else (
             echo Skipping !current_folder! - no version found
         )
@@ -264,8 +274,38 @@ if exist "%psfile%" del "%psfile%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%psfile%"
 del "%psfile%"
 
+:: Patch data\cmz-manifests.json: set version for matching manifest_id
+set "json_path=%~dp0..\data\cmz-manifests.json"
+set "psfile2=%temp%\patch_cmz_%RANDOM%.ps1"
+if exist "%psfile2%" del "%psfile2%"
+(
+    echo $mapPath = "$env:TEMP\manifest_version_map.txt"
+    echo if (Test-Path $mapPath) {
+    echo ^    $pairs = Get-Content -LiteralPath $mapPath
+    echo ^    $map = @{
+    echo ^    foreach ($line in $pairs) {
+    echo ^        if ($line -match '^([0-9]+):(.+)$') { $map[$matches[1]] = $matches[2] }
+    echo ^    }
+    echo ^    $jsonPath = '%json_path%'
+    echo ^    if (Test-Path $jsonPath) {
+    echo ^        $content = Get-Content -Raw -LiteralPath $jsonPath
+    echo ^        $arr = $content ^| ConvertFrom-Json
+    echo ^        foreach ($item in $arr) {
+    echo ^            $mid = [string]$item.manifest_id
+    echo ^            if ($map.ContainsKey($mid)) { $item.version = $map[$mid] }
+    echo ^        }
+    echo ^        $out = $arr ^| ConvertTo-Json -Depth 10
+    echo ^        Set-Content -LiteralPath $jsonPath -Value $out -Encoding UTF8
+    echo ^    } else { Write-Host "JSON path not found: $jsonPath" }
+    echo }
+) > "%psfile2%"
+
+powershell -NoProfile -ExecutionPolicy Bypass -File "%psfile2%"
+del "%psfile2%"
+if exist "%manifest_version_map%" del "%manifest_version_map%"
+
 echo.
-echo All downloads and folder renaming complete!
+echo All downloads, folder renaming, and manifest.json updates complete!
 pause
 goto :eof
 
