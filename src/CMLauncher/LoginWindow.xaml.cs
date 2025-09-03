@@ -37,7 +37,7 @@ namespace CMLauncher
 			Debug.WriteLine("Starting DepotDownloader login test...");
 
 			var path = "depot-downloader/DepotDownloader.exe";
-			var args = $"-app 253430 -depot 253431 -username {u} -password {p} -manifest-only";
+			var args = $"-app 253430 -depot 253431 -username {u} -password {p} -remember-password -manifest-only";
 
 			var outputLines = new List<string>();
 			var process = new Process();
