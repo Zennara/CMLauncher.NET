@@ -398,7 +398,7 @@
                 </Grid.ColumnDefinitions>
                 
                 <!-- Installation selector (bottom-left) -->
-                <Grid Grid.Column="0" VerticalAlignment="Center" Margin="10,8,0,8">
+                <Grid x:Name="InstallSelectorArea" Grid.Column="0" VerticalAlignment="Center" Margin="10,8,0,8">
                     <ToggleButton x:Name="InstallToggle" Style="{StaticResource InstallToggleStyle}">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -436,14 +436,13 @@
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0"/>
                 
                 <!-- Play button -->
-                <Button Grid.Column="2" Content="PLAY" Style="{StaticResource PlayButtonStyle}" 
+                <Button x:Name="PlayButtonControl" Grid.Column="2" Content="PLAY" Style="{StaticResource PlayButtonStyle}" 
                         Click="PlayButton_Click" Margin="10"/>
-            </Grid>
 
-            <!-- Wishlist button shown for CMZ Resurrection only -->
-            <Button x:Name="WishlistButton" Grid.Row="1" Content="WISHLIST" Style="{StaticResource PlayButtonStyle}"
-                    HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10"
-                    Click="WishlistButton_Click" Visibility="Collapsed"/>
+                <!-- Wishlist button (same position as Play) -->
+                <Button x:Name="WishlistButton" Grid.Column="2" Content="WISHLIST" Style="{StaticResource PlayButtonStyle}"
+                        Margin="10" Click="WishlistButton_Click" Visibility="Collapsed"/>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

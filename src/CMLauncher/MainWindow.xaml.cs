@@ -477,6 +477,8 @@ namespace CMLauncher
 					TabsPanel.Visibility = Visibility.Hidden;
 					EditionTitleText.Visibility = Visibility.Hidden;
 					WishlistButton.Visibility = Visibility.Collapsed;
+					InstallSelectorArea.Visibility = Visibility.Visible;
+					PlayButtonControl.Visibility = Visibility.Visible;
 					break;
 				case "CMZ":
 					SetBackdropFor("CMZ");
@@ -486,6 +488,8 @@ namespace CMLauncher
 					EditionTitleText.Visibility = Visibility.Visible;
 					EditionTitleText.Text = "CASTLEMINER Z";
 					WishlistButton.Visibility = Visibility.Collapsed;
+					InstallSelectorArea.Visibility = Visibility.Visible;
+					PlayButtonControl.Visibility = Visibility.Visible;
 					break;
 				case "CMW":
 					SetBackdropFor("CMW");
@@ -495,16 +499,20 @@ namespace CMLauncher
 					EditionTitleText.Visibility = Visibility.Visible;
 					EditionTitleText.Text = "CM WARFARE";
 					WishlistButton.Visibility = Visibility.Collapsed;
+					InstallSelectorArea.Visibility = Visibility.Visible;
+					PlayButtonControl.Visibility = Visibility.Visible;
 					break;
 				case "CMZRE":
-					// Special page: no play bar, keep header height by hiding tabs (not collapsing), show Wishlist
+					// Special page: keep bottom bar, but only show Wishlist (hide installs & play button)
 					SetBackdropFor("CMZRE");
 					MainContentFrame.Navigate(new ModContentPage("CMZRE"));
-					SetBottomPlayBarVisibility(false);
-					TabsPanel.Visibility = Visibility.Hidden; // preserves layout height
+					SetBottomPlayBarVisibility(true);
+					TabsPanel.Visibility = Visibility.Hidden; // keep header height
 					EditionTitleText.Visibility = Visibility.Visible;
 					EditionTitleText.Text = "CMZ RESURRECTION";
 					WishlistButton.Visibility = Visibility.Visible;
+					InstallSelectorArea.Visibility = Visibility.Collapsed;
+					PlayButtonControl.Visibility = Visibility.Collapsed;
 					break;
 				case "Settings":
 					BackdropImage.Visibility = Visibility.Collapsed;
@@ -514,6 +522,8 @@ namespace CMLauncher
 					TabsPanel.Visibility = Visibility.Hidden;
 					EditionTitleText.Visibility = Visibility.Hidden;
 					WishlistButton.Visibility = Visibility.Collapsed;
+					InstallSelectorArea.Visibility = Visibility.Visible;
+					PlayButtonControl.Visibility = Visibility.Visible;
 					break;
 				case "Changelog":
 					BackdropImage.Visibility = Visibility.Collapsed;
@@ -523,6 +533,8 @@ namespace CMLauncher
 					TabsPanel.Visibility = Visibility.Hidden;
 					EditionTitleText.Visibility = Visibility.Hidden;
 					WishlistButton.Visibility = Visibility.Collapsed;
+					InstallSelectorArea.Visibility = Visibility.Visible;
+					PlayButtonControl.Visibility = Visibility.Visible;
 					break;
 			}
 
@@ -784,7 +796,7 @@ namespace CMLauncher
 			try
 			{
 				// Open Steam search or a placeholder URL for Wishlist
-				var url = "https://store.steampowered.com/search/?term=CastleMiner%20Z%20Resurrection";
+				var url = "steam://store/3631230";
 				Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
 			}
 			catch (Exception ex)
