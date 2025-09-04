@@ -124,7 +124,7 @@ namespace CMLauncher
 				.ToList();
 			foreach (var inst in installs)
 			{
-				InstallItemsPanel.Children.Add(CreateInstallMenuButton(inst.Name, inst.Version, inst.IconName));
+				InstallItemsPanel.Children.Add(CreateInstallMenuButtonForInfo(inst));
 				any = true;
 				itemCount++;
 			}
@@ -256,6 +256,15 @@ namespace CMLauncher
 			button.Content = grid;
 			button.Click += SelectInstallation_Click;
 			return button;
+		}
+
+		private Button CreateInstallMenuButtonForInfo(InstallationInfo info)
+		{
+			// Show actual exe version for custom installs
+			var displayVersion = string.Equals(info.Name, "Steam Installation", StringComparison.OrdinalIgnoreCase)
+				? (InstallationService.GetSteamExeVersion(currentSidebarSelection) ?? info.Version)
+				: (InstallationService.GetDisplayVersionForInstallation(info));
+			return CreateInstallMenuButton(info.Name, displayVersion ?? info.Version, info.IconName);
 		}
 
 		private bool TryLoadBlockIcon(Image target, string iconName)

@@ -19,7 +19,6 @@ namespace CMLauncher
 		private const string CMZAppId = "253430";
 		private const string CMWAppId = "675210";
 
-
 		public static string GetRootPath()
 		{
 			var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -32,7 +31,7 @@ namespace CMLauncher
 			return Path.Combine(GetRootPath(), gameFolder);
 		}
 
-		public static void UpdateInstallationVersion(InstallationInfo info, string version)
+		public static void UpdateInstallationVersion(InstallationInfo info, string selectedKey)
 		{
 			// Clear Game folder
 			var gameDir = Path.Combine(info.RootPath, "Game");
@@ -46,9 +45,11 @@ namespace CMLauncher
 			}
 			catch { }
 
+			var manifestId = GetVersionFolderName(selectedKey);
+
 			// Prefer Steam install for Steam Version
-			string versionSource = Path.Combine(GetVersionsPath(info.GameKey), GetVersionFolderName(version));
-			if (string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
+			string versionSource = Path.Combine(GetVersionsPath(info.GameKey), manifestId);
+			if (string.Equals(selectedKey, "Steam Version", StringComparison.OrdinalIgnoreCase))
 			{
 				var appId = GetAppId(info.GameKey);
 				var steamDir = SteamLocator.FindGamePath(appId);
@@ -67,15 +68,18 @@ namespace CMLauncher
 				}
 				else
 				{
-					DownloadGameVersion(info, version);
+					DownloadGameVersion(info, selectedKey);
 				}
 			}
 			catch { }
 
-			// Update info file
+			// Update info file (manifest + friendly version)
 			var path = Path.Combine(info.RootPath, "installation-info.json");
 			var doc = ReadInfoFile(path) ?? new InstallationInfoFile();
-			doc.version = version;
+			doc.manifest = manifestId;
+			doc.version = ResolveFriendlyVersionFromMapping(info.GameKey, manifestId)
+				?? GetDisplayVersionForInstallation(new InstallationInfo { GameKey = info.GameKey, RootPath = info.RootPath, Name = info.Name, Version = manifestId })
+				?? manifestId;
 			WriteInfoFile(path, doc);
 		}
 
@@ -174,7 +178,7 @@ namespace CMLauncher
 			};
 		}
 
-		public static InstallationInfo CreateInstallation(string gameKey, string name, string version, string? iconName = null)
+		public static InstallationInfo CreateInstallation(string gameKey, string name, string selectedKey, string? iconName = null)
 		{
 			var installsRoot = GetInstallationsPath(gameKey);
 			Directory.CreateDirectory(installsRoot);
@@ -204,9 +208,11 @@ namespace CMLauncher
 				}
 			}
 
+			var manifestId = GetVersionFolderName(selectedKey);
+
 			// Steam Version: prefer copying from actual Steam install path
-			var versionSource = Path.Combine(GetVersionsPath(gameKey), GetVersionFolderName(version));
-			if (string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
+			var versionSource = Path.Combine(GetVersionsPath(gameKey), manifestId);
+			if (string.Equals(selectedKey, "Steam Version", StringComparison.OrdinalIgnoreCase))
 			{
 				var appId = GetAppId(gameKey);
 				var steamDir = SteamLocator.FindGamePath(appId);
@@ -230,16 +236,20 @@ namespace CMLauncher
 			{
 				GameKey = gameKey,
 				Name = finalName,
-				Version = version,
+				Version = manifestId, // model stores manifest id for logic
 				Timestamp = null,
 				RootPath = candidatePath,
 				IconName = iconName
 			};
 
 			var infoFile = Path.Combine(candidatePath, "installation-info.json");
+			var friendly = ResolveFriendlyVersionFromMapping(gameKey, manifestId)
+				?? GetDisplayVersionForInstallation(info)
+				?? manifestId;
 			var json = JsonSerializer.Serialize(new InstallationInfoFile
 			{
-				version = version,
+				version = friendly,
+				manifest = manifestId,
 				timestamp = null,
 				icon = iconName
 			}, new JsonSerializerOptions { WriteIndented = true });
@@ -359,15 +369,15 @@ namespace CMLauncher
 			catch { return null; }
 		}
 
-		public static void DownloadGameVersion(InstallationInfo info, string version)
+		public static void DownloadGameVersion(InstallationInfo info, string selectedKey)
 		{
 			try
 			{
-				string manifest = GetVersionFolderName(version);
+				string manifest = GetVersionFolderName(selectedKey);
 				string branch = "public";
-				if (version.Contains('|'))
+				if (selectedKey.Contains('|'))
 				{
-					var parts = version.Split('|');
+					var parts = selectedKey.Split('|');
 					manifest = parts[0];
 					if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1])) branch = parts[1];
 				}
@@ -382,6 +392,16 @@ namespace CMLauncher
 					Debug.WriteLine($"Moving files from {ensured} to {gameDir}");
 					MoveDirectoryContents(ensured, gameDir);
 				}
+
+				// Persist manifest + friendly version
+				var path = Path.Combine(info.RootPath, "installation-info.json");
+				var friendly = ResolveFriendlyVersionFromMapping(info.GameKey, manifest)
+					?? GetDisplayVersionForInstallation(info)
+					?? manifest;
+				var doc = ReadInfoFile(path) ?? new InstallationInfoFile();
+				doc.manifest = manifest;
+				doc.version = friendly;
+				WriteInfoFile(path, doc);
 			}
 			catch (Exception ex)
 			{
@@ -427,7 +447,8 @@ namespace CMLauncher
 			foreach (var dir in Directory.GetDirectories(path))
 			{
 				var name = Path.GetFileName(dir);
-				string version = "Unknown";
+				string manifest = string.Empty;
+				string? friendly = null;
 				DateTime? ts = null;
 				string? icon = null;
 				var infoFile = Path.Combine(dir, "installation-info.json");
@@ -439,7 +460,8 @@ namespace CMLauncher
 						var doc = JsonSerializer.Deserialize<InstallationInfoFile>(json);
 						if (doc != null)
 						{
-							version = doc.version ?? version;
+							manifest = doc.manifest ?? string.Empty;
+							friendly = doc.version;
 							if (!string.IsNullOrWhiteSpace(doc.timestamp) && DateTime.TryParse(doc.timestamp, out var dt))
 								ts = dt;
 							icon = doc.icon;
@@ -451,11 +473,22 @@ namespace CMLauncher
 					// ignore malformed json
 				}
 
+				// If friendly missing, compute it from files lazily
+				if (string.IsNullOrWhiteSpace(friendly))
+				{
+					try
+					{
+						var tmpInfo = new InstallationInfo { GameKey = gameKey, RootPath = dir, Name = name, Version = manifest };
+						friendly = GetDisplayVersionForInstallation(tmpInfo);
+					}
+					catch { }
+				}
+
 				list.Add(new InstallationInfo
 				{
 					GameKey = gameKey,
 					Name = name,
-					Version = version,
+					Version = manifest, // store manifest key in model for logic comparisons
 					Timestamp = ts,
 					RootPath = dir,
 					IconName = icon
@@ -695,6 +728,95 @@ namespace CMLauncher
 				}
 			}
 			catch { }
+		}
+
+		public static string? TryGetExeVersionFromFolder(string gameKey, string folder)
+		{
+			try
+			{
+				var exeName = GetExeName(gameKey);
+				var path = Path.Combine(folder, exeName);
+				if (!File.Exists(path))
+				{
+					// fallback: search recursively (may be slower but only used for listing)
+					var matches = Directory.GetFiles(folder, exeName, SearchOption.AllDirectories);
+					path = matches.FirstOrDefault();
+					if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return null;
+				}
+				var info = FileVersionInfo.GetVersionInfo(path);
+				return !string.IsNullOrWhiteSpace(info.FileVersion) ? info.FileVersion : info.ProductVersion;
+			}
+			catch { return null; }
+		}
+
+		public static List<(string key, string display)> LoadAvailableVersionsDetailed(string gameKey)
+		{
+			var list = new List<(string key, string display)>();
+			var path = GetVersionsPath(gameKey);
+			if (!Directory.Exists(path)) return list;
+			foreach (var dir in Directory.GetDirectories(path))
+			{
+				var key = Path.GetFileName(dir);
+				var display = TryGetExeVersionFromFolder(gameKey, dir) ?? key;
+				list.Add((key, display));
+			}
+			list.Sort((a, b) => StringComparer.OrdinalIgnoreCase.Compare(a.display, b.display));
+			return list;
+		}
+
+		public static string ExtractDisplayVersionFromExeVersion(string? exeVersion)
+		{
+			if (string.IsNullOrWhiteSpace(exeVersion)) return "Unknown";
+			// Prefer ProductVersion if it's richer; FileVersion may drop suffixes
+			return exeVersion.Trim();
+		}
+
+		public static string GetDisplayVersionForInstallation(InstallationInfo info)
+		{
+			try
+			{
+				// Steam pseudo-installation: read directly from Steam exe
+				if (string.IsNullOrWhiteSpace(info.RootPath) || string.Equals(info.Name, "Steam Installation", StringComparison.OrdinalIgnoreCase))
+				{
+					return ExtractDisplayVersionFromExeVersion(GetSteamExeVersion(info.GameKey)) ?? "Steam Version";
+				}
+
+				// Prefer stored friendly version in installation-info.json
+				var infoPath = Path.Combine(info.RootPath, "installation-info.json");
+				if (File.Exists(infoPath))
+				{
+					try
+					{
+						var json = File.ReadAllText(infoPath);
+						var doc = JsonSerializer.Deserialize<InstallationInfoFile>(json);
+						if (!string.IsNullOrWhiteSpace(doc?.version))
+							return doc!.version!;
+					}
+					catch { }
+				}
+
+				// Fallback to exe version from Game directory
+				var gameDir = Path.Combine(info.RootPath ?? string.Empty, "Game");
+				var exeVer = TryGetExeVersionFromFolder(info.GameKey, gameDir);
+				if (!string.IsNullOrWhiteSpace(exeVer)) return ExtractDisplayVersionFromExeVersion(exeVer);
+			}
+			catch { }
+			return "Unknown";
+		}
+
+		public static string? ResolveFriendlyVersionFromMapping(string gameKey, string manifestId)
+		{
+			try
+			{
+				if (string.Equals(gameKey, CMZKey, StringComparison.OrdinalIgnoreCase) && manifestId.All(char.IsDigit))
+				{
+					var list = ManifestService.FetchCmzManifestsAsync().GetAwaiter().GetResult();
+					var match = list.FirstOrDefault(x => string.Equals(x.ManifestId, manifestId, StringComparison.OrdinalIgnoreCase));
+					if (!string.IsNullOrWhiteSpace(match?.Version)) return match!.Version!;
+				}
+			}
+			catch { }
+			return null;
 		}
 	}
 }

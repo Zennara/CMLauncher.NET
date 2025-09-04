@@ -34,18 +34,42 @@ namespace CMLauncher
 					{
 						var label = string.IsNullOrWhiteSpace(m.Version) ? m.ManifestId : m.Version;
 						var branch = string.IsNullOrWhiteSpace(m.Branch) ? "public" : m.Branch;
+						// Tag holds manifest|branch, content shows full version name
 						combo.Items.Add(new ComboBoxItem { Content = label, Tag = $"{m.ManifestId}|{branch}" });
 					}
 				}
 				else
 				{
-					// fallback to local versions folder for other games
-					foreach (var v in InstallationService.LoadAvailableVersions(gameKey))
+					// fallback to local versions folder for other games (no mapping)
+					foreach (var v in InstallationService.LoadAvailableVersionsDetailed(gameKey))
 					{
-						combo.Items.Add(new ComboBoxItem { Content = v, Tag = v });
+						combo.Items.Add(new ComboBoxItem { Content = v.display, Tag = v.key });
 					}
 				}
 
+				combo.SelectedIndex = combo.Items.Count > 0 ? 0 : -1;
+			}
+			catch
+			{
+				// If anything fails, fallback to local versions
+				combo.Items.Clear();
+				foreach (var v in InstallationService.LoadAvailableVersions(gameKey))
+				{
+					combo.Items.Add(new ComboBoxItem { Content = v, Tag = v });
+				}
+				combo.SelectedIndex = combo.Items.Count > 0 ? 0 : -1;
+			}
+		}
+
+		private void PopulateVersionCombo(ComboBox combo, string gameKey)
+		{
+			try
+			{
+				combo.Items.Clear();
+				foreach (var (key, display) in InstallationService.LoadAvailableVersionsDetailed(gameKey))
+				{
+					combo.Items.Add(new ComboBoxItem { Content = display, Tag = key });
+				}
 				combo.SelectedIndex = combo.Items.Count > 0 ? 0 : -1;
 			}
 			catch
@@ -161,7 +185,8 @@ namespace CMLauncher
 			// Info
 			var infoPanel = new StackPanel();
 			infoPanel.Children.Add(new TextBlock { Text = info.Name, FontSize = 16, Foreground = Brushes.White });
-			infoPanel.Children.Add(new TextBlock { Text = $"Version: {info.Version}", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 4, 0, 0) });
+			var displayVersion = InstallationService.GetDisplayVersionForInstallation(info);
+			infoPanel.Children.Add(new TextBlock { Text = $"Version: {displayVersion}", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 4, 0, 0) });
 			var ts = info.Timestamp;
 			var tsText = ts.HasValue ? $"Last played: {ts.Value.ToLocalTime():g}" : "Last played: never";
 			infoPanel.Children.Add(new TextBlock { Text = tsText, FontSize = 11, Foreground = Brushes.Gray, Margin = new Thickness(0, 2, 0, 0) });
