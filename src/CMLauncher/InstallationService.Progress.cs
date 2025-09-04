@@ -27,7 +27,22 @@ namespace CMLauncher
 
 			var root = new StackPanel { Margin = new Thickness(20), Width = 600 };
 			_status = new TextBlock { Text = "Preparing...", Margin = new Thickness(20, 0, 0, 10) };
-			_bar = new ProgressBar { Minimum = 0, Maximum = 100, Height = 16, Width = 560, IsIndeterminate = true };
+
+			// Match console background and use app accent (red) for the indicator
+			var consoleBg = new SolidColorBrush(Color.FromRgb(20, 20, 20));
+			var accent = TryFindResource("AccentBrush") as Brush ?? new SolidColorBrush(Color.FromRgb(183, 28, 28));
+			var borderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+
+			_bar = new ProgressBar
+			{
+				Minimum = 0,
+				Maximum = 100,
+				Height = 16,
+				Width = 560,
+				IsIndeterminate = true,
+				Foreground = accent,
+				Background = consoleBg
+			};
 
 			// Console-like log area
 			_log = new TextBox
@@ -39,9 +54,9 @@ namespace CMLauncher
 				VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
 				TextWrapping = TextWrapping.NoWrap,
 				IsReadOnly = true,
-				Background = new SolidColorBrush(Color.FromRgb(20, 20, 20)),
+				Background = consoleBg,
 				Foreground = Brushes.Gainsboro,
-				BorderBrush = new SolidColorBrush(Color.FromRgb(60, 60, 60)),
+				BorderBrush = borderBrush,
 				FontFamily = new FontFamily("Consolas"),
 				FontSize = 12
 			};
