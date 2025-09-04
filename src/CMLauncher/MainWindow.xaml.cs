@@ -456,9 +456,9 @@ namespace CMLauncher
 			}
 
 			// 1) Application resource
-			if (SetFromUri($"pack://application:,,,/ {relPath}")) return true;
+			if (SetFromUri($"pack://application:,,,/{relPath}")) return true;
 			// 2) Site of origin
-			if (SetFromUri($"pack://siteoforigin:,,,/ {relPath}")) return true;
+			if (SetFromUri($"pack://siteoforigin:,,,/{relPath}")) return true;
 			// 3) Local disk
 			var diskPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relPath.Replace('/', Path.DirectorySeparatorChar));
 			if (File.Exists(diskPath) && SetFromUri(diskPath)) return true;
@@ -497,11 +497,11 @@ namespace CMLauncher
 					WishlistButton.Visibility = Visibility.Collapsed;
 					break;
 				case "CMZRE":
-					// Special page: no play bar, show Wishlist button
+					// Special page: no play bar, keep header height by hiding tabs (not collapsing), show Wishlist
 					SetBackdropFor("CMZRE");
 					MainContentFrame.Navigate(new ModContentPage("CMZRE"));
 					SetBottomPlayBarVisibility(false);
-					TabsPanel.Visibility = Visibility.Collapsed;
+					TabsPanel.Visibility = Visibility.Hidden; // preserves layout height
 					EditionTitleText.Visibility = Visibility.Visible;
 					EditionTitleText.Text = "CMZ RESURRECTION";
 					WishlistButton.Visibility = Visibility.Visible;
