@@ -1,9 +1,9 @@
 {
 	"versions": [
 		{
-			"version": "unknown",
+			"version": "1.0.0.2",
 			"manifest_id": "2913661773419979992",
-			"branch":  "public",
+			"branch": "public",
 			"timestamp": "2017-08-17T20:17:22+00:00",
 			"changelog": []
 		}
