@@ -169,12 +169,42 @@ namespace CMLauncher
 				var exePath = System.IO.Path.Combine(gameDir!, exeName);
 				if (File.Exists(exePath))
 				{
-					Process.Start(new ProcessStartInfo
+					if (isSteamPseudo)
 					{
-						FileName = exePath,
-						WorkingDirectory = gameDir,
-						UseShellExecute = true
-					});
+						// Launch Steam install normally
+						Process.Start(new ProcessStartInfo
+						{
+							FileName = exePath,
+							WorkingDirectory = gameDir,
+							UseShellExecute = true
+						});
+					}
+					else
+					{
+						// Launch custom installation with isolated AppData rooted at Data directory
+						var dataDir = Path.Combine(info.RootPath, "Data");
+						Directory.CreateDirectory(dataDir);
+						var appData = Path.Combine(dataDir, "AppData", "Roaming");
+						var localAppData = Path.Combine(dataDir, "AppData", "Local");
+						Directory.CreateDirectory(appData);
+						Directory.CreateDirectory(localAppData);
+
+						var psi = new ProcessStartInfo
+						{
+							FileName = exePath,
+							WorkingDirectory = gameDir,
+							UseShellExecute = false
+						};
+						// Inherit existing PATH and prepend game dir
+						var existingPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+						psi.Environment["PATH"] = gameDir + ";" + existingPath;
+						psi.Environment["PWD"] = gameDir;
+						psi.Environment["USERPROFILE"] = dataDir;
+						psi.Environment["APPDATA"] = appData;
+						psi.Environment["LOCALAPPDATA"] = localAppData;
+
+						Process.Start(psi);
+					}
 
 					// Update timestamp for this installation or steam
 					if (isSteamPseudo)
