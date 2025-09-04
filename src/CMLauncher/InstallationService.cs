@@ -62,8 +62,8 @@ namespace CMLauncher
 			{
 				if (Directory.Exists(versionSource))
 				{
-					// If version files already exist, just move/copy them into Game
-					MoveDirectoryContents(versionSource, gameDir);
+					// If version files already exist, copy them into Game (preserve cache)
+					CopyDirectoryContents(versionSource, gameDir);
 				}
 				else
 				{
@@ -216,12 +216,12 @@ namespace CMLauncher
 				}
 			}
 
-			// Copy/move version files into Game if a matching source exists
+			// Copy version files into Game if a matching source exists (preserve cache)
 			try
 			{
 				if (Directory.Exists(versionSource))
 				{
-					MoveDirectoryContents(versionSource, gameDir);
+					CopyDirectoryContents(versionSource, gameDir);
 				}
 			}
 			catch { }
@@ -664,6 +664,34 @@ namespace CMLauncher
 						// fallback to copy
 						try { DirectoryCopy(dir, destPath, true); Directory.Delete(dir, true); } catch { }
 					}
+				}
+			}
+			catch { }
+		}
+
+		private static void CopyDirectoryContents(string sourceDir, string destDir)
+		{
+			try
+			{
+				Directory.CreateDirectory(destDir);
+				if (!Directory.Exists(sourceDir)) return;
+
+				// Copy files
+				foreach (var file in Directory.GetFiles(sourceDir))
+				{
+					var name = Path.GetFileName(file);
+					var destPath = Path.Combine(destDir, name);
+					try { File.Copy(file, destPath, overwrite: true); } catch { }
+				}
+
+				// Copy subdirectories (skip DepotDownloader metadata folder)
+				foreach (var dir in Directory.GetDirectories(sourceDir))
+				{
+					var name = Path.GetFileName(dir);
+					if (string.Equals(name, ".DepotDownloader", StringComparison.OrdinalIgnoreCase))
+						continue;
+					var destPath = Path.Combine(destDir, name);
+					try { DirectoryCopy(dir, destPath, true); } catch { }
 				}
 			}
 			catch { }
