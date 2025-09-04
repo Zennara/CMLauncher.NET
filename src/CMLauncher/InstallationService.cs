@@ -47,7 +47,7 @@ namespace CMLauncher
 			catch { }
 
 			// Prefer Steam install for Steam Version
-			string versionSource = Path.Combine(GetVersionsPath(info.GameKey), version);
+			string versionSource = Path.Combine(GetVersionsPath(info.GameKey), GetVersionFolderName(version));
 			if (string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
 			{
 				var appId = GetAppId(info.GameKey);
@@ -62,11 +62,12 @@ namespace CMLauncher
 			{
 				if (Directory.Exists(versionSource))
 				{
-					DirectoryCopy(versionSource, gameDir, true);
+					// If version files already exist, just move/copy them into Game
+					MoveDirectoryContents(versionSource, gameDir);
 				}
 				else
 				{
-					DownloadGameVersion(info, version); // placeholder
+					DownloadGameVersion(info, version);
 				}
 			}
 			catch { }
@@ -204,7 +205,7 @@ namespace CMLauncher
 			}
 
 			// Steam Version: prefer copying from actual Steam install path
-			var versionSource = Path.Combine(GetVersionsPath(gameKey), version);
+			var versionSource = Path.Combine(GetVersionsPath(gameKey), GetVersionFolderName(version));
 			if (string.Equals(version, "Steam Version", StringComparison.OrdinalIgnoreCase))
 			{
 				var appId = GetAppId(gameKey);
@@ -215,12 +216,12 @@ namespace CMLauncher
 				}
 			}
 
-			// Copy version files into Game if a matching source exists
+			// Copy/move version files into Game if a matching source exists
 			try
 			{
 				if (Directory.Exists(versionSource))
 				{
-					DirectoryCopy(versionSource, gameDir, true);
+					MoveDirectoryContents(versionSource, gameDir);
 				}
 			}
 			catch { }
@@ -362,7 +363,7 @@ namespace CMLauncher
 		{
 			try
 			{
-				string manifest = version;
+				string manifest = GetVersionFolderName(version);
 				string branch = "public";
 				if (version.Contains('|'))
 				{
@@ -378,8 +379,8 @@ namespace CMLauncher
 				var gameDir = Path.Combine(info.RootPath, "Game");
 				if (Directory.Exists(ensured))
 				{
-					Debug.WriteLine($"Copying files from {ensured} to {gameDir}");
-					DirectoryCopy(ensured, gameDir, true);
+					Debug.WriteLine($"Moving files from {ensured} to {gameDir}");
+					MoveDirectoryContents(ensured, gameDir);
 				}
 			}
 			catch (Exception ex)
@@ -606,6 +607,63 @@ namespace CMLauncher
 				else
 				{
 					task.Wait();
+				}
+			}
+			catch { }
+		}
+
+		private static string GetVersionFolderName(string version)
+		{
+			if (string.IsNullOrWhiteSpace(version)) return version;
+			var pipe = version.IndexOf('|');
+			if (pipe > 0)
+			{
+				return version.Substring(0, pipe).Trim();
+			}
+			return version.Trim();
+		}
+
+		private static void MoveDirectoryContents(string sourceDir, string destDir)
+		{
+			try
+			{
+				Directory.CreateDirectory(destDir);
+				if (!Directory.Exists(sourceDir)) return;
+
+				// Move files
+				foreach (var file in Directory.GetFiles(sourceDir))
+				{
+					var name = Path.GetFileName(file);
+					var destPath = Path.Combine(destDir, name);
+					try
+					{
+						if (File.Exists(destPath)) File.Delete(destPath);
+						File.Move(file, destPath);
+					}
+					catch
+					{
+						// fallback to copy
+						try { File.Copy(file, destPath, overwrite: true); File.Delete(file); } catch { }
+					}
+				}
+
+				// Move subdirectories (skip DepotDownloader metadata folder)
+				foreach (var dir in Directory.GetDirectories(sourceDir))
+				{
+					var name = Path.GetFileName(dir);
+					if (string.Equals(name, ".DepotDownloader", StringComparison.OrdinalIgnoreCase))
+						continue;
+					var destPath = Path.Combine(destDir, name);
+					try
+					{
+						if (Directory.Exists(destPath)) Directory.Delete(destPath, true);
+						Directory.Move(dir, destPath);
+					}
+					catch
+					{
+						// fallback to copy
+						try { DirectoryCopy(dir, destPath, true); Directory.Delete(dir, true); } catch { }
+					}
 				}
 			}
 			catch { }
