@@ -26,7 +26,7 @@ namespace CMLauncher
 			Owner = Application.Current?.MainWindow;
 
 			var root = new StackPanel { Margin = new Thickness(20), Width = 600 };
-			_status = new TextBlock { Text = "Preparing...", Margin = new Thickness(0, 0, 0, 10) };
+			_status = new TextBlock { Text = "Preparing...", Margin = new Thickness(20, 0, 0, 10) };
 			_bar = new ProgressBar { Minimum = 0, Maximum = 100, Height = 16, Width = 560, IsIndeterminate = true };
 
 			// Console-like log area

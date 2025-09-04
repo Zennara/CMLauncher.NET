@@ -579,7 +579,7 @@ namespace CMLauncher
 						// Friendly status updates (keep window text short)
 						if (lower.Contains("pre-allocating "))
 						{
-							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateStatus("Pre-alocating files"));
+							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateStatus("Pre-allocating files"));
 						}
 						else if (lower.Contains("validating "))
 						{
