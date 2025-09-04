@@ -4,7 +4,10 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows; // added for login prompt on auth failure during operations
+using System.Windows.Threading;
 
 namespace CMLauncher
 {
@@ -357,7 +360,32 @@ namespace CMLauncher
 
 		public static void DownloadGameVersion(InstallationInfo info, string version)
 		{
-			// Placeholder: intentionally do nothing for now
+			try
+			{
+				string manifest = version;
+				string branch = "public";
+				if (version.Contains('|'))
+				{
+					var parts = version.Split('|');
+					manifest = parts[0];
+					if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1])) branch = parts[1];
+				}
+
+				if (!manifest.All(char.IsDigit)) return;
+
+				Debug.WriteLine($"Ensuring version manifest {manifest} (branch {branch}) for {info.GameKey}");
+				var ensured = EnsureVersionByManifest(info.GameKey, manifest, branch);
+				var gameDir = Path.Combine(info.RootPath, "Game");
+				if (Directory.Exists(ensured))
+				{
+					Debug.WriteLine($"Copying files from {ensured} to {gameDir}");
+					DirectoryCopy(ensured, gameDir, true);
+				}
+			}
+			catch (Exception ex)
+			{
+				Debug.WriteLine($"DownloadGameVersion error: {ex.Message}");
+			}
 		}
 
 		public static string GetInstallationsPath(string gameKey) => Path.Combine(GetGameRoot(gameKey), "installations");
@@ -483,57 +511,88 @@ namespace CMLauncher
 
 			try
 			{
-				var ddExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "depot-downloader", "DepotDownloader.exe");
-				if (!File.Exists(ddExe))
-				{
-					ddExe = Path.Combine(Directory.GetCurrentDirectory(), "depot-downloader", "DepotDownloader.exe");
-				}
-				if (File.Exists(ddExe))
-				{
-					var appId = GetAppId(gameKey);
-					var depotId = gameKey == CMZKey ? "253431" : "675211";
-					Directory.CreateDirectory(target);
-					var branchArg = string.Equals(branch, "public", StringComparison.OrdinalIgnoreCase) ? string.Empty : $" -branch {branch}";
-					var creds = BuildCredentialArgs();
-					var psi = new ProcessStartInfo
-					{
-						FileName = ddExe,
-						Arguments = $"-app {appId} -depot {depotId} -manifest {manifestId}{branchArg}{creds} -remember-password -dir \"{target}\"",
-						WorkingDirectory = Path.GetDirectoryName(ddExe) ?? AppDomain.CurrentDomain.BaseDirectory,
-						UseShellExecute = false,
-						CreateNoWindow = true,
-						RedirectStandardOutput = true,
-						RedirectStandardError = true
-					};
-					var sb = new StringBuilder();
-					bool steamGuard = false;
-					bool authFailed = false;
-					bool rateLimited = false;
-					using var p = new Process { StartInfo = psi, EnableRaisingEvents = true };
-					DataReceivedEventHandler onData = (_, e) =>
-					{
-						if (e.Data == null) return;
-						sb.AppendLine(e.Data);
-						if (ContainsSteamGuardPrompt(e.Data)) steamGuard = true;
-						if (ContainsRateLimitPrompt(e.Data)) rateLimited = true;
-						if (e.Data.IndexOf("Failed to authenticate", StringComparison.OrdinalIgnoreCase) >= 0 || e.Data.IndexOf("InvalidPassword", StringComparison.OrdinalIgnoreCase) >= 0) authFailed = true;
-					};
-					p.OutputDataReceived += onData;
-					p.ErrorDataReceived += onData;
-					p.Start();
-					p.BeginOutputReadLine();
-					p.BeginErrorReadLine();
-					p.WaitForExit();
+				var ddExe = GetDepotDownloaderExePath();
+				if (string.IsNullOrWhiteSpace(ddExe) || !File.Exists(ddExe)) return target;
 
-					if (steamGuard || authFailed || rateLimited || p.ExitCode != 0)
+				var appId = GetAppId(gameKey);
+				var depotId = gameKey == CMZKey ? "253431" : "675211";
+				Directory.CreateDirectory(target);
+				var branchArg = string.Equals(branch, "public", StringComparison.OrdinalIgnoreCase) ? string.Empty : $" -branch {branch}";
+				var creds = BuildCredentialArgs();
+
+				DownloadProgressWindow? dlg = null;
+				Application.Current?.Dispatcher.Invoke(() =>
+				{
+					dlg = new DownloadProgressWindow("Downloading version...");
+					dlg?.Show();
+				});
+
+				bool accessDenied = false;
+				var percentRegex = new System.Text.RegularExpressions.Regex("(?<p>\\d{1,3}(?:\\.\\d+)?)(?=%)");
+				var launcher = new DepotDownloaderWrapper(ddExe!);
+				launcher.OutputReceived += line =>
+				{
+					try
 					{
-						HandleAuthFailureDuringOperation();
+						Debug.WriteLine(line);
+						var lower = line.ToLowerInvariant();
+						if (!accessDenied && lower.Contains("access token was rejected") && lower.Contains("accessdenied"))
+						{
+							accessDenied = true;
+						}
+						var m = percentRegex.Match(line);
+						if (m.Success && double.TryParse(m.Groups["p"].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var p))
+						{
+							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateProgress(p, line));
+						}
+						else
+						{
+							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateStatus(line));
+						}
 					}
+					catch { }
+				};
+
+				var args = $"-app {appId} -depot {depotId} -manifest {manifestId}{branchArg}{creds} -remember-password -dir \"{target}\"";
+				var runTask = launcher.RunAsync(args);
+				// Keep UI responsive while waiting
+				WaitWithUiPump(runTask);
+
+				Application.Current?.Dispatcher.Invoke(() => { try { dlg?.Close(); } catch { } });
+
+				if (accessDenied)
+				{
+					HandleAuthFailureDuringOperation();
 				}
 			}
 			catch { }
 
 			return target;
+		}
+
+		// Pump UI messages while waiting so the progress window updates
+		private static void WaitWithUiPump(System.Threading.Tasks.Task task)
+		{
+			try
+			{
+				var dispatcher = Application.Current?.Dispatcher;
+				if (dispatcher != null && dispatcher.CheckAccess())
+				{
+					while (!task.IsCompleted)
+					{
+						// Process pending messages
+						dispatcher.Invoke(DispatcherPriority.Background, new Action(() => { }));
+						Thread.Sleep(15);
+					}
+					// Observe exceptions if any
+					task.GetAwaiter().GetResult();
+				}
+				else
+				{
+					task.Wait();
+				}
+			}
+			catch { }
 		}
 	}
 }
