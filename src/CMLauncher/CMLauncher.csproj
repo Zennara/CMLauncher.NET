@@ -43,10 +43,13 @@
 	<ItemGroup>
 		<Resource Include="assets\logos\cmz.png" Condition="Exists('assets\logos\cmz.png')" />
 		<Resource Include="assets\logos\cmw.png" Condition="Exists('assets\logos\cmw.png')" />
+		<Resource Include="assets\logos\cmzre.jpg" Condition="Exists('assets\logos\cmzre.jpg')" />
 		<Resource Include="assets\backdrops\cmz-backdrop.png" Condition="Exists('assets\backdrops\cmz-backdrop.png')" />
 		<Resource Include="assets\backdrops\cmw-backdrop.png" Condition="Exists('assets\backdrops\cmw-backdrop.png')" />
+		<Resource Include="assets\backdrops\cmzre-backdrop.jpg" Condition="Exists('assets\backdrops\cmzre-backdrop.jpg')" />
 		<Resource Include="assets\wordarts\castleminerz.png" Condition="Exists('assets\wordarts\castleminerz.png')" />
 		<Resource Include="assets\wordarts\castleminerwarfare.png" Condition="Exists('assets\wordarts\castleminerwarfare.png')" />
+		<Resource Include="assets\wordarts\castleminerzresurrection.png" Condition="Exists('assets\wordarts\castleminerzresurrection.png')" />
 	</ItemGroup>
 
 	<!-- Copy external content to output folder -->

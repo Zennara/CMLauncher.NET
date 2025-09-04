@@ -352,6 +352,7 @@ namespace CMLauncher
 					LoadInstallationsIntoPopup(tag);
 				}
 
+				// Navigate and manage special-case UI
 				NavigateToContent(tag);
 			}
 		}
@@ -388,24 +389,35 @@ namespace CMLauncher
 		private void SetBackdropFor(string tag)
 		{
 			// Backdrop stays the same
-			var fileName = tag == "CMW" ? "cmw-backdrop.png" : "cmz-backdrop.png";
+			string fileName;
+			if (tag == "CMW") fileName = "cmw-backdrop.png";
+			else if (tag == "CMZRE") fileName = "cmzre-backdrop.jpg";
+			else fileName = "cmz-backdrop.png";
 			var relPath = $"assets/backdrops/{fileName}";
 			LoadImageWithFallback(BackdropImage, relPath, 0.9);
 
 			// Wordart: try multiple candidate filenames
-			string[] candidates = tag == "CMW"
-				? new[]
+			string[] candidates = tag switch
+			{
+				"CMW" => new[]
 				{
 					"assets/wordarts/castleminerwarfare.png",
 					"assets/wordarts/castleminerwarfare.jpg",
 					"assets/wordarts/castleminerwarfare"
-				}
-				: new[]
+				},
+				"CMZRE" => new[]
+				{
+					"assets/wordarts/castleminerzresurrection.png",
+					"assets/wordarts/castleminerzresurrection.jpg",
+					"assets/wordarts/castleminerzresurrection"
+				},
+				_ => new[]
 				{
 					"assets/wordarts/castleminerz.png",
 					"assets/wordarts/castleminerz.jpg",
 					"assets/wordarts/castleminerz"
-				};
+				}
+			};
 			LoadFirstAvailable(WordartImage, candidates, 0.95);
 		}
 
@@ -464,6 +476,7 @@ namespace CMLauncher
 					SetBottomPlayBarVisibility(true);
 					TabsPanel.Visibility = Visibility.Hidden;
 					EditionTitleText.Visibility = Visibility.Hidden;
+					WishlistButton.Visibility = Visibility.Collapsed;
 					break;
 				case "CMZ":
 					SetBackdropFor("CMZ");
@@ -471,6 +484,8 @@ namespace CMLauncher
 					SetBottomPlayBarVisibility(true);
 					TabsPanel.Visibility = Visibility.Visible;
 					EditionTitleText.Visibility = Visibility.Visible;
+					EditionTitleText.Text = "CASTLEMINER Z";
+					WishlistButton.Visibility = Visibility.Collapsed;
 					break;
 				case "CMW":
 					SetBackdropFor("CMW");
@@ -478,6 +493,18 @@ namespace CMLauncher
 					SetBottomPlayBarVisibility(true);
 					TabsPanel.Visibility = Visibility.Visible;
 					EditionTitleText.Visibility = Visibility.Visible;
+					EditionTitleText.Text = "CM WARFARE";
+					WishlistButton.Visibility = Visibility.Collapsed;
+					break;
+				case "CMZRE":
+					// Special page: no play bar, show Wishlist button
+					SetBackdropFor("CMZRE");
+					MainContentFrame.Navigate(new ModContentPage("CMZRE"));
+					SetBottomPlayBarVisibility(false);
+					TabsPanel.Visibility = Visibility.Collapsed;
+					EditionTitleText.Visibility = Visibility.Visible;
+					EditionTitleText.Text = "CMZ RESURRECTION";
+					WishlistButton.Visibility = Visibility.Visible;
 					break;
 				case "Settings":
 					BackdropImage.Visibility = Visibility.Collapsed;
@@ -486,6 +513,7 @@ namespace CMLauncher
 					SetBottomPlayBarVisibility(false);
 					TabsPanel.Visibility = Visibility.Hidden;
 					EditionTitleText.Visibility = Visibility.Hidden;
+					WishlistButton.Visibility = Visibility.Collapsed;
 					break;
 				case "Changelog":
 					BackdropImage.Visibility = Visibility.Collapsed;
@@ -494,6 +522,7 @@ namespace CMLauncher
 					SetBottomPlayBarVisibility(false);
 					TabsPanel.Visibility = Visibility.Hidden;
 					EditionTitleText.Visibility = Visibility.Hidden;
+					WishlistButton.Visibility = Visibility.Collapsed;
 					break;
 			}
 
@@ -748,6 +777,20 @@ namespace CMLauncher
 		{
 			// Refresh using the currently selected game (CMZ/CMW)
 			LoadInstallationsIntoPopup(currentSidebarSelection);
+		}
+
+		private void WishlistButton_Click(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				// Open Steam search or a placeholder URL for Wishlist
+				var url = "https://store.steampowered.com/search/?term=CastleMiner%20Z%20Resurrection";
+				Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show($"Failed to open link: {ex.Message}", "Wishlist", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
 		}
 	}
 }
