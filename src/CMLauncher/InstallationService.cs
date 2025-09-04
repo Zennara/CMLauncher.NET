@@ -535,19 +535,35 @@ namespace CMLauncher
 					try
 					{
 						Debug.WriteLine(line);
+						Application.Current?.Dispatcher.Invoke(() => dlg?.AppendLog(line));
 						var lower = line.ToLowerInvariant();
 						if (!accessDenied && lower.Contains("access token was rejected") && lower.Contains("accessdenied"))
 						{
 							accessDenied = true;
 						}
+
+						// Friendly status updates (keep window text short)
+						if (lower.Contains("pre-allocating "))
+						{
+							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateStatus("Pre-alocating files"));
+						}
+						else if (lower.Contains("validating "))
+						{
+							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateStatus("Validating files"));
+						}
+						else if (lower.StartsWith("processing depot"))
+						{
+							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateStatus("Preparing download..."));
+						}
+						else if (lower.StartsWith("downloading depot"))
+						{
+							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateStatus("Downloading files"));
+						}
+
 						var m = percentRegex.Match(line);
 						if (m.Success && double.TryParse(m.Groups["p"].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var p))
 						{
-							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateProgress(p, line));
-						}
-						else
-						{
-							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateStatus(line));
+							Application.Current?.Dispatcher.Invoke(() => dlg?.UpdateProgress(p, "Downloading files"));
 						}
 					}
 					catch { }
