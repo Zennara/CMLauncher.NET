@@ -44,7 +44,7 @@ namespace CMLauncher
 				Background = consoleBg
 			};
 
-			// Console-like log area
+			// Console-like log area (non-interactive)
 			_log = new TextBox
 			{
 				Margin = new Thickness(0, 10, 0, 0),
@@ -58,8 +58,14 @@ namespace CMLauncher
 				Foreground = Brushes.Gainsboro,
 				BorderBrush = borderBrush,
 				FontFamily = new FontFamily("Consolas"),
-				FontSize = 12
+				FontSize = 12,
+				IsTabStop = false,
+				Focusable = false,
+				IsHitTestVisible = false,
+				SelectionBrush = Brushes.Transparent,
+				SelectionOpacity = 0
 			};
+			_log.ContextMenu = null;
 
 			root.Children.Add(_status);
 			root.Children.Add(_bar);
